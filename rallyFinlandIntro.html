@@ -2852,17 +2852,38 @@ function finEntrants(){
   return s;
 }
 
+/* Martini-Lancia som liten klikkbar bil — skjult inngang til easter egg-
+   spillet. Samme bil vi kjører i spillet (hvit Delta Integrale med
+   Martini-render). Ligger BARE på Auriols 1992-rad, som selv er gjemt bak
+   «vis alle vinnere». Ingen annen vei inn. */
+var EGGCAR =
+  '<a class="eggcar" href="#spill" title="?" aria-label="salainen erikoiskoe">'+
+    '<svg viewBox="0 0 64 26" width="52" height="21">'+
+      '<path d="M2 20 L2 15 Q3 12 9 12 L16 6 Q18 4 27 4 L44 4 Q52 5 56 12 '+
+        'L61 13 Q63 14 62 18 L62 20 Z" fill="#eceae2" stroke="#c9c6bb" stroke-width="1"/>'+
+      '<path d="M18 6 Q19.5 4.6 27 4.6 L40 4.6 L40 11 L15.5 11 Z" fill="#a9c6d6"/>'+
+      '<rect x="24" y="4" width="6" height="16" fill="#123a6b"/>'+
+      '<rect x="30" y="4" width="4" height="16" fill="#d1122b"/>'+
+      '<rect x="34" y="4" width="3" height="16" fill="#6fb7e0"/>'+
+      '<circle cx="16" cy="20" r="5.4" fill="#232427"/>'+
+      '<circle cx="16" cy="20" r="2.2" fill="#d9d6cc"/>'+
+      '<circle cx="49" cy="20" r="5.4" fill="#232427"/>'+
+      '<circle cx="49" cy="20" r="2.2" fill="#d9d6cc"/>'+
+    '</svg>'+
+  '</a>';
 function winRow(w, entrants){
   if(!w[1]){
     return '<div class="wrow off"><span class="wyear">'+w[0]+'</span>'+
            '<span class="wwho"><b>ikke arrangert</b><i>'+w[4]+'</i></span></div>';
   }
   var here = entrants[w[1].toLowerCase()];
-  return '<div class="wrow'+(here?' here':'')+'">'+
+  var egg = (w[0]===1992 && /Auriol/.test(w[1]));
+  return '<div class="wrow'+(here?' here':'')+(egg?' egg':'')+'">'+
     '<span class="wyear">'+w[0]+'</span>'+
     '<span class="flag" data-flag="'+w[2]+'"></span>'+
     '<span class="wwho"><b>'+w[1]+'</b><i>'+w[3]+
-      '<span class="wsep"> · </span><span class="wcar">'+w[4]+'</span></i></span>'+
+      '<span class="wsep"> · </span><span class="wcar">'+w[4]+
+      (egg ? EGGCAR : '')+'</span></i></span>'+
   '</div>';
 }
 
@@ -2924,7 +2945,10 @@ function route(){
                  biler:document.getElementById('biler'),
                  forer:document.getElementById('forer'),
                  sesong:document.getElementById('sesong'),
-                 finland:document.getElementById('finland')};
+                 finland:document.getElementById('finland'),
+                 spill:document.getElementById('spill')};
+  /* forlater man spillet, skal spilløkka og lyden stoppe */
+  if(window.SPILL && h.indexOf('spill')!==0) SPILL.leave();
   function show(id){
     for(var k in screens) screens[k].classList.toggle('on', k===id);
     window.scrollTo(0,0);
@@ -2953,13 +2977,20 @@ function route(){
       var el = document.getElementById(sec);
       if(el) setTimeout(function(){ el.scrollIntoView({behavior:'smooth',block:'start'}); },0);
     }
+  } else if(h.indexOf('spill')===0){
+    show('spill');
+    if(window.SPILL) SPILL.enter();
   } else {
     show('hjem');
     if(h){ var el = document.getElementById(h); if(el) el.scrollIntoView(); }
   }
 }
 window.addEventListener('hashchange', route);
-route();
+/* skjermen #spill ligger lenger ned i dokumentet enn dette skriptet —
+   første rute må derfor vente til hele DOM-en er parset */
+if(document.readyState === 'loading')
+  document.addEventListener('DOMContentLoaded', route);
+else route();
 
 /* tegn flaggene på førerkortene */
 paintFlags(document);
@@ -3093,5 +3124,1813 @@ document.addEventListener('keydown', function(e){
 })();
 </script>
 
+<style>
+/* ===== easter egg: salainen erikoiskoe (hemmelig fartsprøve) ===== */
+#spill{padding:0}
+.spillwrap{
+  position:relative;max-width:1060px;margin:0 auto;
+  padding:10px 12px 16px;
+}
+#spillCanvas{
+  display:block;width:100%;border-radius:8px;
+  background:#b8e0ee;box-shadow:0 8px 26px var(--shadow);
+  touch-action:none;
+}
+.spilltopp{
+  display:flex;justify-content:space-between;align-items:center;
+  padding:8px 2px 10px;
+  /* over overlegget (z 6): hovedmeny-lenka og lydknappen skal alltid
+     kunne klikkes, også når en popup står på skjermen */
+  position:relative;z-index:8;
+}
+.spilltopp .back{color:var(--ink-dim);text-decoration:none;font-size:.95rem}
+.spilltopp .back:hover{color:var(--ink)}
+.spilltopp .tittel{
+  font-size:.78rem;font-weight:700;letter-spacing:.14em;
+  text-transform:lowercase;color:var(--ink-dim);
+}
+.spilllyd{
+  border:0;border-radius:16px;background:rgba(255,255,255,.2);
+  color:var(--ink);font:inherit;font-size:.72rem;font-weight:700;
+  letter-spacing:.08em;text-transform:lowercase;padding:6px 13px;cursor:pointer;
+}
+.spilllyd:hover{background:rgba(255,255,255,.34)}
+.topknapper{display:flex;gap:6px;align-items:center}
+/* ---- fullskjerm ---- */
+/* :fullscreen og :-webkit-full-screen MÅ stå som egne regler: en ukjent
+   selektor i en kommaliste ugyldiggjør hele lista i eldre nettlesere */
+.spillwrap:fullscreen{
+  max-width:none;width:100vw;height:100vh;box-sizing:border-box;
+  display:flex;flex-direction:column;justify-content:center;
+  background:var(--sage);padding:4px 10px 8px;
+}
+.spillwrap:-webkit-full-screen{
+  max-width:none;width:100vw;height:100vh;box-sizing:border-box;
+  background:var(--sage);
+}
+/* ---- «snu telefonen» — bare portrett på små skjermer ---- */
+.snurot{display:none}
+@media (max-width:900px) and (orientation:portrait){
+  .snurot{
+    position:absolute;inset:10px 12px 16px;z-index:9;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    gap:10px;border-radius:8px;text-align:center;
+    background:rgba(30,47,42,.96);color:#e7f1ec;
+  }
+  .snurot b{font-size:1.05rem;font-weight:700;text-transform:lowercase}
+  .snurot span{font-size:.78rem;color:rgba(231,241,236,.7)}
+}
+/* store tommelknapper — venstre ned, høyre opp */
+.spillbtn{
+  position:absolute;bottom:34px;z-index:5;
+  width:74px;height:74px;border:0;border-radius:50%;
+  background:rgba(24,46,42,.55);color:#fff;font-size:1.7rem;line-height:1;
+  cursor:pointer;box-shadow:0 4px 14px rgba(20,35,30,.45),
+    inset 0 0 0 2px rgba(255,255,255,.35);
+  -webkit-user-select:none;user-select:none;touch-action:manipulation;
+}
+.spillbtn:active{background:var(--teal);transform:scale(.94)}
+.spillbtn.ned{left:26px}
+.spillbtn.opp{right:26px}
+/* overlegg for meny / krasj / mål — samme panelspråk som resten av sida */
+.spillover{
+  position:absolute;inset:10px 12px 16px;z-index:6;border-radius:8px;
+  display:none;align-items:center;justify-content:center;
+  background:rgba(35,52,47,.45);
+}
+.spillover.on{display:flex}
+.spillover .boks{
+  width:min(430px,88%);background:var(--sage);border-radius:10px;
+  padding:22px 24px;text-align:center;
+  box-shadow:0 14px 44px rgba(30,45,40,.55), 0 0 0 1px rgba(255,255,255,.22);
+}
+.spillover h2{
+  font-size:1.35rem;font-weight:700;text-transform:lowercase;
+  text-shadow:0 1px 2px var(--shadow);margin-bottom:4px;
+}
+.spillover .fin{
+  font-size:.72rem;font-weight:700;letter-spacing:.16em;text-transform:uppercase;
+  color:var(--ink-dim);margin-bottom:12px;
+}
+.spillover p{
+  font-size:.83rem;line-height:1.55;color:var(--ink-soft);margin-bottom:8px;
+}
+.spillover p b{color:var(--ink)}
+.spillover .lcdtid{
+  font-family:Consolas,"Courier New",monospace;font-size:1.5rem;font-weight:700;
+  letter-spacing:.06em;margin:6px 0 10px;text-shadow:0 1px 3px var(--shadow);
+}
+.spillover .knapper{display:flex;gap:9px;justify-content:center;margin-top:14px}
+.spillover button{
+  border:0;border-radius:20px;font:inherit;font-size:.8rem;font-weight:700;
+  letter-spacing:.08em;text-transform:lowercase;padding:11px 22px;cursor:pointer;
+  color:#fff;background:var(--teal);
+}
+.spillover button:hover{background:var(--orange)}
+.spillover button.ghost{background:rgba(255,255,255,.22);color:var(--ink)}
+/* oppsettknapp på venstre side — synlig bare i menytilstand, ligger
+   OVER overlegget (z 7 > 6) så den kan nås ved siden av menyboksen */
+.spilloppknapp{
+  position:absolute;left:24px;top:50%;transform:translateY(-50%);
+  z-index:7;display:none;
+  border:0;border-radius:30px;background:rgba(24,46,42,.6);color:#fff;
+  font:inherit;font-size:1.12rem;font-weight:700;letter-spacing:.08em;
+  text-transform:lowercase;padding:20px 38px;cursor:pointer;
+  box-shadow:0 5px 16px rgba(20,35,30,.45), inset 0 0 0 2px rgba(255,255,255,.32);
+}
+.spilloppknapp:hover{background:var(--teal)}
+.spilloppknapp:active{transform:translateY(-50%) scale(.95)}
+@media (max-width:600px){ .spilloppknapp{left:14px} }
+/* oppsettmeny: frihøyde og fjærstivhet, 1–7 som resten av spillet */
+.spillover .oppsett{
+  margin:10px auto 0;padding:10px 14px 4px;border-radius:8px;
+  background:rgba(255,255,255,.16);max-width:290px;
+}
+.spillover .otit{
+  font-size:.64rem;font-weight:700;letter-spacing:.18em;
+  text-transform:uppercase;color:var(--ink-dim);margin-bottom:7px;
+}
+.spillover .orad{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.spillover .orad span{flex:1;text-align:left;font-size:.8rem;color:var(--ink-soft)}
+.spillover .orad span i{
+  display:block;font-style:normal;font-size:.62rem;
+  letter-spacing:.05em;color:var(--ink-dim);
+}
+.spillover .orad b{width:22px;font-size:.92rem}
+.spillover button.ojust{
+  width:32px;height:32px;padding:0;border-radius:50%;line-height:1;
+  font-size:1.05rem;background:rgba(255,255,255,.3);color:var(--ink);
+}
+.spillover button.ojust:hover{background:var(--teal);color:#fff}
+/* liten pulseffekt på kartet når man tapper det (easter egg-feedback) */
+.mapfin.puls{animation:mapfinpuls .18s ease}
+@keyframes mapfinpuls{50%{transform:scale(.96)}}
+@media (max-width:600px){
+  .spillbtn{width:64px;height:64px;bottom:26px}
+  .spillbtn.ned{left:16px}
+  .spillbtn.opp{right:16px}
+}
+</style>
+<!-- ======================================================= -->
+<!-- SCREEN 6: SPILL (skjult easter egg)                     -->
+<!-- ======================================================= -->
+<div class="screen" id="spill">
+  <div class="spillwrap">
+    <div class="spilltopp">
+      <a class="back" href="#">‹ hovedmeny</a>
+      <span class="tittel">salainen ek · rally finland</span>
+      <span class="topknapper">
+        <button class="spilllyd" id="spillFull" hidden>fullskjerm</button>
+        <button class="spilllyd" id="spillLyd">lyd: på</button>
+      </span>
+    </div>
+    <canvas id="spillCanvas"></canvas>
+    <button class="spillbtn ned" id="spillNed" aria-label="lavere fart">▼</button>
+    <button class="spillbtn opp" id="spillOpp" aria-label="høyere fart">▲</button>
+    <button class="spilloppknapp" id="spillOppsettKnapp">oppsett</button>
+    <div class="spillover" id="spillOver">
+      <div class="boks" id="spillBoks"></div>
+    </div>
+    <!-- vises bare i portrettmodus på små skjermer (ren css) -->
+    <div class="snurot">
+      <svg viewBox="0 0 64 64" width="66" height="66" aria-hidden="true">
+        <rect x="20" y="6" width="24" height="42" rx="4"
+              fill="none" stroke="currentColor" stroke-width="3"/>
+        <line x1="27" y1="42" x2="37" y2="42"
+              stroke="currentColor" stroke-width="3" stroke-linecap="round"/>
+        <path d="M14 54 A22 22 0 0 0 50 54" fill="none"
+              stroke="currentColor" stroke-width="3" stroke-linecap="round"/>
+        <path d="M50 54 l-1 -8 M50 54 l-8 1"
+              stroke="currentColor" stroke-width="3" stroke-linecap="round"/>
+      </svg>
+      <b>snu telefonen</b>
+      <span>salainen ek kjøres på tvers</span>
+    </div>
+  </div>
+</div>
+<script>
+var SPRITE_BODY='data:image/webp;base64,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';
+/* ================================================================
+   SALAINEN EK — hemmelig fartsprøve (easter egg)
+   Sidescroller: velg fart 1–7, land riktig på hoppa.
+   Alt tegnes på canvas, all lyd er syntetisert — ingen eksterne filer.
+   ================================================================ */
+var SPILL = (function(){
+'use strict';
+
+/* ---------- konstanter ---------- */
+/* Målfart per girnivå 1..7 (px/s). KMFAK er valgt så nivå 7 viser 200
+   km/t — realistisk toppfart for en rallybil på finsk grus. */
+var TL   = [0,175,240,310,380,450,515,580];
+var KMFAK = .345;
+var G    = 620;          // tyngde (px/s^2)
+var ACC  = 300, DEC = 420, DECBOOST = 120;
+var CW   = 170;          // bilens tegnebredde i verden
+var SF   = CW/640;       // spriteskala
+var WB   = (513-104)*SF; // akselavstand
+var RW   = 61*SF;        // hjulradius — grusdekk, litt høyere enn asfaltoppsettet
+/* ---- justerbart oppsett (velges i menyen før start) ---- */
+var SETUP = {ride:3, fjaer:4, dkomp:4, dreb:4};   // alle på 1..7-skala
+function klamp17(v){ v = v|0; return v<1 ? 1 : (v>7 ? 7 : v); }
+try{
+  var so = JSON.parse(localStorage.getItem('spillOppsett')||'0');
+  if(so) ['ride','fjaer','dkomp','dreb'].forEach(function(k){
+    if(so[k] != null) SETUP[k] = klamp17(so[k]);
+  });
+}catch(e){}
+var RIDE, KOMPMAX, DROOP, ACCFAK, FJK, FJDK, FJDR;
+function applySetup(){
+  RIDE    = 1 + SETUP.ride;    // frihøyde: karosseriløft 2..8 px over akslene
+  KOMPMAX = RIDE - 1;          // mer frihøyde = mer fjæringsvei opp i buen
+  DROOP   = -(5 + RIDE);       // ... og mer vei ned: lav bil = kort slag begge veier
+  ACCFAK  = 1 + (4 - SETUP.ride)*.02;  // lav bil = hakket kvikkere (lavt tyngdepunkt),
+                                       // kompensasjon for det korte fjæringsslaget
+  FJK     = 10 + SETUP.fjaer*5;    // fjærkonstant 15..45
+  FJDK    = 4 + SETUP.dkomp*1.5;   // demping i kompresjon (karosseriet på vei ned)
+  FJDR    = 4 + SETUP.dreb*1.5;    // demping i retur (karosseriet på vei opp)
+}
+applySetup();
+function lagreSetup(){
+  try{ localStorage.setItem('spillOppsett', JSON.stringify(SETUP)); }catch(e){}
+}
+var AXY  = 180.5;        // akselhøyde i sprite
+var AXMX = 308.5;        // midtpunkt mellom akslene i sprite-x
+var FINISH = 16200, WEND = 16440;
+var NESEGRENSE = -28*Math.PI/180;   // krasj: nese først
+var HEKKGRENSE =  31*Math.PI/180;   // krasj: hekk først
+var SPIDDGRENSE= -35*Math.PI/180;   // krasj: nesa rett i motbakkeveggen
+var GLATTMIN   = -10*Math.PI/180;   // "rent" landingsvindu, nedre kant
+var GLATTMAX   =  13*Math.PI/180;   // øvre kant — litt hekktung er lov
+var HARDVINKEL =  16*Math.PI/180;   // utenfor dette: hard landing, mister fart
+var NEDBAKKE   =  -5*Math.PI/180;   // bakkehelning som gir boost
+var MOTBAKKE   =   6*Math.PI/180;   // bakkehelning som bremser
+
+/* ---------- terreng: kontrollpunkter (x, høyde opp) ---------- */
+/* Rampene går RETT i knekken (ingen flate topper — de dreper utkastet),
+   og landingsbakkene er 280–580 px lange så et ekte svev faktisk treffer
+   dem. Lengdene er regnet ut fra svevlengdene på nivå 4–6. */
+var PTS = [
+[0,0],[500,0],
+[560,4],[640,22],[720,2],[800,20],[880,0],[960,0],
+[1240,0],[1435,70],[1840,-30],[1950,-30],
+[2040,-16],[2190,54],[2360,54],[2700,-44],[2800,-48],
+[2900,-48],[3010,-6],[3290,-52],[3380,-56],
+[3470,-56],[3580,-14],[3860,-60],[3950,-64],
+[4040,-64],[4150,-22],[4430,-68],[4520,-72],
+[4650,-72],[4750,-64],
+[4870,-52],[5120,52],[5700,-118],[5840,-124],
+[5940,-130],[6010,-140],[6080,-130],[6150,-124],
+[6260,-124],[6400,-78],[6650,-122],[6740,-126],
+[6800,-126],[6860,-114],[6920,-128],[6980,-116],[7040,-130],[7100,-118],[7160,-130],
+[7260,-130],[7400,-84],[7680,-132],[7800,-136],
+[7900,-128],[8150,-24],[8600,-150],[8720,-156],
+[8820,-156],[8880,-142],[8940,-156],[9000,-144],[9060,-158],[9120,-146],[9180,-158],
+[9280,-158],[9420,-114],[9680,-162],[9770,-166],
+[9860,-166],[9960,-152],
+[10060,-140],[10260,-56],[10710,-212],[10850,-220],
+[10960,-220],[11060,-218],
+/* === NY FORMASJON 1: kuoppa — kompresjoner ===
+   To brede gjel med slak nedkjøring og BRATT motvegg. Bilen kjører ned i
+   dem (for brede til å fly over) og treffer motveggen. Kommer du fort,
+   slår framfjæringa i bånn mot veggen og nesa graver seg = krasj. Fortere
+   = hardere slag, helt forutsigbart. Du MÅ ned i fart her. */
+[11350,-322],[11460,-320],
+[11580,-206],
+[11760,-206],
+[12000,-322],[12110,-320],
+[12230,-206],
+/* === NY FORMASJON 2: tuplahyppy — to rygger tett i tett ===
+   Kort landingshylle mellom ryggene. Rygg 2 reiser seg PROGRESSIVT (slak
+   fot, bratt topp): lander du kort på foten mister du fart, flyr du langt
+   havner du høyt i veggen. Gradert straff, aldri blindvegg. */
+[12360,-206],
+[12520,-118],
+[12800,-196],
+[12880,-184],[12960,-150],
+[13290,-258],[13430,-270],
+/* Lang, nesten flat rettstrekning — her henter man igjen fart og velger
+   med hvilken fart man vil gå utfor den siste kanten. */
+[14140,-268],
+/* === NY FORMASJON 3: pudotus — et ekte finsk «yump» ===
+   Veien stiger jevnt (~18°) til en SKARP rygg — ingen flat topp, for en
+   flat topp fanger bilen og dreper hoppet. Rett etter ryggen stuper bakken
+   bort. Bilen kastes oppover av ryggen (fart over en konveks kant) OG
+   bakken forsvinner under den → langt, høyt svev; et ekte stort rallyhopp,
+   ikke en utskytningsrampe. Landinga er én lang jevn utforbakke på ~22°:
+   nesa reiser seg med farta, og for høy nese gir hekk-krasj. Sakte = ren
+   landing (kanskje boost), fort = hekken først. */
+[14500,-138],
+[14630,-300],
+[15900,-812],
+[16060,-820],
+[16440,-820]];
+
+/* Samples hver 4. px. LINEÆR interpolasjon + lett utjevning: rampene
+   beholder helningen sin helt fram til leppa, så bilen faktisk kastes
+   OPPOVER av hoppkanten. Cosinus-glatting ga null helning i hvert knekk-
+   punkt — da «datt» bilen bare av kanten i stedet for å hoppe. */
+var TSTEP = 4, TN = Math.floor(WEND/TSTEP)+2;
+var TH = new Float32Array(TN), TSL = new Float32Array(TN);
+(function(){
+  var seg = 0;
+  for(var i=0;i<TN;i++){
+    var x = i*TSTEP;
+    while(seg < PTS.length-2 && x > PTS[seg+1][0]) seg++;
+    var a = PTS[seg], b = PTS[seg+1];
+    var t = Math.min(1, Math.max(0,(x-a[0])/(b[0]-a[0])));
+    TH[i] = a[1] + (b[1]-a[1])*t;
+  }
+  /* to runder boksglatting (±2 samples = 8 px) tar bort de skarpeste
+     knekkene uten å spise opp rampehelningen */
+  for(var pass=0;pass<2;pass++){
+    var kopi = new Float32Array(TH);
+    for(var i=2;i<TN-2;i++)
+      TH[i] = (kopi[i-2]+kopi[i-1]+kopi[i]+kopi[i+1]+kopi[i+2])/5;
+  }
+  for(var i=0;i<TN;i++){
+    var i0 = Math.max(0,i-1), i1 = Math.min(TN-1,i+1);
+    TSL[i] = (TH[i1]-TH[i0])/((i1-i0)*TSTEP);
+  }
+})();
+function terrH(x){
+  if(x<=0) return TH[0];
+  var f = x/TSTEP, i = Math.floor(f);
+  if(i>=TN-1) return TH[TN-1];
+  return TH[i]+(TH[i+1]-TH[i])*(f-i);
+}
+function terrSl(x){
+  var i = Math.max(0, Math.min(TN-1, Math.round(x/TSTEP)));
+  return TSL[i];
+}
+
+/* ---------- deterministisk småtilfeldighet for pynt ---------- */
+function hsh(n){ n = (n*2654435761)>>>0; n ^= n>>13; n = (n*2246822519)>>>0; return ((n>>>9)&8191)/8191; }
+
+/* ---------- pynt i verden ---------- */
+var ARCHES = [{x:340,txt:'salainen ek'},{x:FINISH,txt:'maali'}];
+var BALES  = [1430,2350,5110,6395,7395,8140,9410,10250,11200,11840,13100,14400];
+/* Mest finsk, men naboland stikker innom slik de gjør langs ekte etapper */
+var FLAGS  = [{x:1500,l:'fi'},{x:3400,l:'fi'},{x:5000,l:'se'},{x:6800,l:'fi'},
+              {x:7880,l:'fi'},{x:9300,l:'ee'},{x:10150,l:'fi'},{x:11080,l:'no'},
+              {x:13000,l:'fi'},{x:14140,l:'se'},{x:16120,l:'fi'}];
+var POSTS  = [1000,2000,3000,4000,5000,6000,7000,8000,9000,10000,
+              11000,12000,13000,14000,15000,16000];
+var CROWDS = [1700,2450,5350,5560,7560,8450,9500,10450,10600,
+              11340,12360,12900,13430,14450,15200,15600];
+var COTTAGE = 6120, PUDDLE = 6010;
+/* Landemerker i to lag.
+   BYGG står i MELLOMLAGET et stykke unna løypa — hus og konstruksjoner
+   hører ikke hjemme i veikanten. bs er størrelsen på den avstanden.
+   NATUR står i selve terrenget, plantet langs bakken ved veien. */
+var MARKER_BYGG = [
+  {x:640,   k:'vannturn',  bs:30},
+  {x:2620,  k:'kirke',     bs:27},
+  {x:5250,  k:'tarn',      bs:24},
+  {x:8180,  k:'telt',      bs:23},
+  {x:9720,  k:'vindmolle', bs:27},
+  {x:11800, k:'tarn',      bs:25},
+  {x:13700, k:'kirke',     bs:25},
+  {x:15400, k:'vindmolle', bs:28}
+];
+var LANDMARKS = [
+  {x:4320,  k:'elg',   s:40},
+  {x:6640,  k:'stein', s:54},
+  {x:12900, k:'stein', s:58}
+];
+var TREES = (function(){
+  var t = [];
+  for(var x=80; x<WEND; x+=110){
+    var r = hsh(x);
+    var wx = x + r*70;
+    var nearArch = ARCHES.some(function(a){return Math.abs(a.x-wx)<130;});
+    var nearMark = LANDMARKS.some(function(m){return Math.abs(m.x-wx)<150;});
+    if(nearArch || nearMark || Math.abs(COTTAGE-wx)<150) continue;
+    if(r < 0.62) t.push({x:wx, k:'gran', s:34+hsh(x+1)*28});
+    else if(r < 0.83) t.push({x:wx, k:'bjork', s:28+hsh(x+3)*18});
+  }
+  return t;
+})();
+
+/* ---------- sprites ---------- */
+var imgBody = new Image(), spritesOK = 0;
+imgBody.onload = function(){ spritesOK++; };
+imgBody.src = SPRITE_BODY;
+/* Hjulet settes sammen i stedet for å klippes rett fra fotoet: i bildet
+   gjemmer skjermen toppen av dekket, så et rent utklipp dro med seg
+   karosseripiksler som ble synlige når hjulet rullet. Dekket tegnes som
+   grusdekk (fotoet er asfaltoppsett), mens felgen er den EKTE felgen,
+   klippet ut av fotoet med symmetrisenterering rundt navet. */
+var SPRITE_RIM='data:image/webp;base64,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';
+var imgWheel = document.createElement('canvas');
+var imgRim = new Image();
+imgRim.onload = function(){ byggHjul(); spritesOK++; };
+imgRim.src = SPRITE_RIM;
+function byggHjul(){
+  imgWheel.width = imgWheel.height = 124;
+  var g = imgWheel.getContext('2d'), R = 61, i;
+  g.translate(62,62);
+  g.fillStyle = '#26272a';
+  g.beginPath(); g.arc(0,0,R,0,7); g.fill();
+  for(i=0;i<24;i++){                       /* tette, grunne riller — mye
+    nærmere gatedekket på fotoet enn knastene var */
+    g.save(); g.rotate(i*Math.PI*2/24);
+    g.fillStyle = '#202124';
+    g.fillRect(-2.2, -R, 4.4, 6);
+    g.restore();
+  }
+  g.fillStyle = '#2c2d30';                 /* sidevegg, smalere bane */
+  g.beginPath(); g.arc(0,0,R-7,0,7); g.fill();
+  /* ekte felg fra fotoet. Utsnittet er radielt varpet så navet og den
+     synlige felgkanten er konsentriske; kanten ligger på 42/48 av
+     utsnittet og skaleres hit til RIMR. 39/61 ≈ 64 % ligger mellom
+     fotoets asfaltoppsett (74 %) og full grus-stil. */
+  var RIMR = 39, D = RIMR*96/42;
+  g.save();
+  g.beginPath(); g.arc(0,0,RIMR,0,7); g.clip();
+  g.drawImage(imgRim, -D/2, -D/2, D, D);
+  g.restore();
+  g.lineWidth = 3; g.strokeStyle = '#1b1c1e';  /* dekkskulder mot felgen */
+  g.beginPath(); g.arc(0,0,RIMR+.5,0,7); g.stroke();
+}
+
+/* ---------- lyd (WebAudio, alt syntetisert) ---------- */
+var A = {ctx:null, master:null, eng:null, engGain:null, engFlt:null, on:true};
+function audioInit(){
+  if(A.ctx) return;
+  try{
+    var C = window.AudioContext || window.webkitAudioContext;
+    A.ctx = new C();
+    A.master = A.ctx.createGain(); A.master.gain.value = A.on?1:0;
+    A.master.connect(A.ctx.destination);
+    var o1 = A.ctx.createOscillator(), o2 = A.ctx.createOscillator();
+    o1.type='sawtooth'; o2.type='sawtooth'; o2.detune.value = 14;
+    A.engFlt = A.ctx.createBiquadFilter(); A.engFlt.type='lowpass'; A.engFlt.frequency.value=420;
+    A.engGain = A.ctx.createGain(); A.engGain.gain.value = 0;
+    o1.connect(A.engFlt); o2.connect(A.engFlt);
+    A.engFlt.connect(A.engGain); A.engGain.connect(A.master);
+    o1.start(); o2.start();
+    A.eng = [o1,o2];
+  }catch(e){ A.ctx = null; }
+}
+function engSet(freq, gain){
+  if(!A.ctx) return;
+  A.eng[0].frequency.setTargetAtTime(freq, A.ctx.currentTime, .04);
+  A.eng[1].frequency.setTargetAtTime(freq*1.005, A.ctx.currentTime, .04);
+  A.engFlt.frequency.setTargetAtTime(300+freq*3.2, A.ctx.currentTime, .06);
+  A.engGain.gain.setTargetAtTime(gain, A.ctx.currentTime, .08);
+}
+function noiseBuf(dur){
+  var n = Math.floor(A.ctx.sampleRate*dur), b = A.ctx.createBuffer(1,n,A.ctx.sampleRate);
+  var d = b.getChannelData(0);
+  for(var i=0;i<n;i++) d[i] = Math.random()*2-1;
+  return b;
+}
+function pop(st){ // fjertesmell fra eksosen
+  if(!A.ctx) return;
+  var s = A.ctx.createBufferSource(); s.buffer = noiseBuf(.09);
+  var f = A.ctx.createBiquadFilter(); f.type='bandpass'; f.frequency.value=700; f.Q.value=1.4;
+  var g = A.ctx.createGain(); g.gain.setValueAtTime(.28*st, A.ctx.currentTime);
+  g.gain.exponentialRampToValueAtTime(.001, A.ctx.currentTime+.09);
+  s.connect(f); f.connect(g); g.connect(A.master); s.start();
+}
+function bang(){
+  if(!A.ctx) return;
+  var s = A.ctx.createBufferSource(); s.buffer = noiseBuf(.7);
+  var f = A.ctx.createBiquadFilter(); f.type='lowpass'; f.frequency.value=240;
+  var g = A.ctx.createGain(); g.gain.setValueAtTime(.9, A.ctx.currentTime);
+  g.gain.exponentialRampToValueAtTime(.002, A.ctx.currentTime+.7);
+  s.connect(f); f.connect(g); g.connect(A.master); s.start();
+  var o = A.ctx.createOscillator(); o.frequency.value = 52;
+  var og = A.ctx.createGain(); og.gain.setValueAtTime(.55, A.ctx.currentTime);
+  og.gain.exponentialRampToValueAtTime(.002, A.ctx.currentTime+.5);
+  o.connect(og); og.connect(A.master); o.start(); o.stop(A.ctx.currentTime+.55);
+}
+function thud(st){
+  if(!A.ctx || st<=0) return;
+  var s = A.ctx.createBufferSource(); s.buffer = noiseBuf(.1);
+  var f = A.ctx.createBiquadFilter(); f.type='lowpass'; f.frequency.value=280;
+  var g = A.ctx.createGain(); g.gain.setValueAtTime(Math.min(.4,.1+st*.001), A.ctx.currentTime);
+  g.gain.exponentialRampToValueAtTime(.001, A.ctx.currentTime+.1);
+  s.connect(f); f.connect(g); g.connect(A.master); s.start();
+}
+function blip(f0,dur,gv,type){
+  if(!A.ctx) return;
+  var o = A.ctx.createOscillator(); o.type = type||'square'; o.frequency.value=f0;
+  var g = A.ctx.createGain(); g.gain.setValueAtTime(gv, A.ctx.currentTime);
+  g.gain.exponentialRampToValueAtTime(.001, A.ctx.currentTime+dur);
+  o.connect(g); g.connect(A.master); o.start(); o.stop(A.ctx.currentTime+dur+.02);
+}
+function chirp(){ blip(680,.07,.12); setTimeout(function(){ blip(1010,.09,.12); },70); }
+function fanfare(){ [523,659,784,1046].forEach(function(f,i){
+  setTimeout(function(){ blip(f, i===3?.4:.13, .14, 'triangle'); }, i*130); }); }
+
+/* ---------- tilstand ---------- */
+var cv, ctx2, cssW=0, cssH=0, zoom=1, dpr=1;
+var state = 'av';
+var L, s, x, h, vy, th, thv, grounded, s0, prate, airT, gSl;
+var tid, best = null;
+var boostT, downTimes, warnT, blinkT;
+var dF, dR, hOff, hOffV, spin;   // hjulfølging + karosseriets fjæring + hjulrotasjon
+var camX=0, camH=0, shake=0, flashT=0;
+var crashT=0, crashDir=1, blowT=0, finT=0, countT=0, crashWhy='', nBoost=0, airMax=0;
+var splashed=false;
+var parts = [], pops = [];
+var raf = 0, lastT = 0, accum = 0;
+
+/* Nøkkelen har løypeversjon: rekorder fra en kortere løype skal ikke bli
+   stående som uslåelige spøkelser når løypa er bygget om. */
+var BESTNOKKEL = 'spillBestTid_v3';
+try{ best = parseFloat(localStorage.getItem(BESTNOKKEL))||null; }catch(e){}
+
+function reset(){
+  L=3; s=0; x=60; h=terrH(60); vy=0; th=0; thv=0;
+  grounded=true; s0=0; prate=0; airT=0; gSl=0; crashWhy='';
+  tid=0; boostT=0; downTimes=[]; warnT=0; blinkT=0;
+  dF=0; dR=0; hOff=0; hOffV=0; spin=0;
+  camX = x-200; camH = h; shake=0; flashT=0;
+  crashT=0; blowT=0; finT=0; splashed=false; nBoost=0; airMax=0;
+  parts.length=0; pops.length=0;
+}
+
+/* ---------- gir/fart-input ---------- */
+function girOpp(){
+  if(state!=='kjor' && state!=='nedtelling') return;
+  if(L<7){ L++; blip(300+L*60,.05,.06); }
+}
+function girNed(){
+  if(state!=='kjor' && state!=='nedtelling') return;
+  if(L>1){ L--; }
+  var now = performance.now();
+  downTimes.push(now);
+  downTimes = downTimes.filter(function(t){ return now-t < 1400; });
+  if(downTimes.length===2){ pop(.6); }
+  if(downTimes.length===3){ pop(1); warnT = 1; }
+  if(downTimes.length>=4 && state==='kjor'){ blow(); return; }
+  blip(200+L*40,.05,.05);
+}
+
+/* ---------- hendelser ---------- */
+function blow(){
+  state='motor'; blowT=0; bang(); flashT=.14; shake=9;
+  for(var i=0;i<26;i++) spawnFire();
+}
+function crash(why){
+  state='krasj'; crashT=0; crashWhy=why;
+  crashDir = (why==='nese') ? -1 : 1;
+  grounded=false;
+  thud(500); shake=7;
+  for(var i=0;i<20;i++) spawnDust(x, terrH(x), 1.6);
+}
+function goal(){
+  state='maal'; finT=0; fanfare();
+  var ny = best===null || tid < best;
+  if(ny){ best = tid; try{ localStorage.setItem(BESTNOKKEL, String(tid)); }catch(e){} }
+  setTimeout(function(){ visMaal(ny); }, 1300);
+}
+
+/* ---------- landing ---------- */
+function land(fPen, rPen){
+  var cwx = (fPen>rPen) ? x+Math.cos(th)*WB/2 : x-Math.cos(th)*WB/2;
+  var phi = Math.atan(terrSl(cwx));
+  var rel = th - phi;
+  if(window.__LOG) __LOG.push({x:Math.round(x), th:+(th*57.3).toFixed(1),
+    phi:+(phi*57.3).toFixed(1), rel:+(rel*57.3).toFixed(1),
+    vy:Math.round(vy), air:+airT.toFixed(2)});
+  /* småhopp over vaskebrettet skal aldri velte noen — krasj krever et
+     ordentlig svev. i motbakkeveggene gjelder egne regler (under). */
+  if(airT > .18 && phi <= MOTBAKKE){
+    if(rel < NESEGRENSE){ crash('nese'); return; }
+    if(rel > HEKKGRENSE){ crash('hekk'); return; }
+  }
+  if(airT > .18 && phi > MOTBAKKE && rel < SPIDDGRENSE){ crash('nese'); return; }
+  var impact = Math.max(0, -vy);
+  var at = airT;   /* airT nullstilles under — utfallet trenger den gamle */
+  grounded = true; airT = 0; gSl = terrSl(x);
+  /* INGEN teleport ned til bakken: karosseriet blir stående der det er,
+     og farten det hadde blir til fjærkompresjon. Hjulet tar bakken først,
+     kroppen synker etterpå — det er dét fjæra er til for. */
+  hOff  = h - terrH(x);
+  hOffV = vy - gSl*s;   /* restfart etter at ren bakkefølging er trukket fra */
+  if(phi > MOTBAKKE && at > .18){
+    s *= 0.5;
+    pops.push({x:x, y:h+95, txt:'tungt! motbakke', age:0, c:'#ffb0a0'});
+    thud(impact+220);
+    for(var i=0;i<12;i++) spawnDust(x, terrH(x), 1.2);
+  } else if(phi < NEDBAKKE && rel > GLATTMIN && rel < GLATTMAX && at > .18){
+    s += 110; boostT = 1.5; nBoost++;
+    pops.push({x:x, y:h+95, txt:'puhdas! +fart', age:0, c:'#ffd75e'});
+    chirp();
+    for(var i=0;i<10;i++) spawnSpark();
+  } else if(Math.abs(rel) > HARDVINKEL && at > .18){
+    s *= 0.65;
+    pops.push({x:x, y:h+95, txt:'stygt nedslag', age:0, c:'#e8d8c8'});
+    thud(impact+180);
+    for(var i=0;i<10;i++) spawnDust(x, terrH(x), 1.1);
+  } else {
+    if(impact > 260) s *= 0.9;
+    thud(impact);
+    for(var i=0;i<6;i++) spawnDust(x, terrH(x), .8);
+  }
+}
+
+/* ---------- partikler ---------- */
+function spawnDust(wx, wh, sc){
+  parts.push({t:'dust', x:wx+(Math.random()*40-20), y:wh+4,
+    vx:(Math.random()*60-30), vy:20+Math.random()*50,
+    age:0, life:.7+Math.random()*.5, r:(5+Math.random()*8)*sc});
+}
+function spawnGrus(){
+  parts.push({t:'grus', x:x-WB/2-6, y:h+3,
+    vx:-s*.35-Math.random()*60, vy:60+Math.random()*90,
+    age:0, life:.4+Math.random()*.3, r:1.5+Math.random()*2});
+}
+function spawnSpark(){
+  parts.push({t:'spark', x:x+(Math.random()*60-30), y:h+8,
+    vx:(Math.random()*160-80), vy:120+Math.random()*130,
+    age:0, life:.5+Math.random()*.3, r:2+Math.random()*2});
+}
+function spawnFire(){
+  parts.push({t:'ild', x:x+WB*.35+(Math.random()*24-8), y:h+RW+26,
+    vx:(Math.random()*30-10), vy:60+Math.random()*80,
+    age:0, life:.5+Math.random()*.5, r:5+Math.random()*7});
+}
+function spawnRoyk(){
+  parts.push({t:'royk', x:x+WB*.35+(Math.random()*20-6), y:h+RW+30,
+    vx:(Math.random()*24-6), vy:36+Math.random()*40,
+    age:0, life:1.4+Math.random()*.9, r:7+Math.random()*9});
+}
+function spawnSplash(){
+  for(var i=0;i<16;i++)
+    parts.push({t:'vann', x:x+(Math.random()*50-30), y:h+4,
+      vx:(Math.random()*100-70), vy:130+Math.random()*160,
+      age:0, life:.5+Math.random()*.3, r:2.5+Math.random()*3});
+}
+
+/* ---------- fysikk-steg ---------- */
+function step(dt){
+  if(state==='kjor'){
+    tid += dt;
+    boostT -= dt;
+    if(grounded){
+      var T = TL[L];
+      /* effekten tapes oppover i registeret: å hente igjen toppfart etter
+         en smell tar tid — derfor svir det å lande stygt. (men toppfarta må
+         være reelt oppnåelig, ellers biter aldri krasjgrensene) */
+      var acc = Math.max(140, ACC*(1 - s/900))*ACCFAK;
+      if(s < T) s = Math.min(T, s + acc*dt);
+      else if(s > T) s = Math.max(T, s - (boostT>0?DECBOOST:DEC)*dt);
+      /* TYNGDEKRAFT LANGS BAKKEN. Uten dette holdt motoren full fart rett
+         opp en 60°-rampe — som betyr uendelig motoreffekt — og bilen nådde
+         leppa altfor fort og skjøt til værs. Nå bremses den i motbakke og
+         vinner fart i utforbakke, som en ekte bil. Da henger hopphøyden
+         sammen med rampas bratthet BARE gjennom fysikk: en bratt rampe
+         saktner bilen, så den letter med lavere fart. gLangs er den
+         vannrette komponenten av tyngdas akselerasjon langs bakken. */
+      var slN = terrSl(x);
+      s -= G * slN/(1+slN*slN) * dt;
+      if(s < 0) s = 0;
+    }
+    x += s*dt;
+    if(x >= FINISH){ goal(); return; }
+
+    if(grounded){
+      /* ballistikken må regnes med helningen fra der bilen VAR — bruker man
+         helningen på det nye punktet, følger «kastebanen» bakken og bilen
+         letter aldri */
+      var hTer = terrH(x);
+      /* kastebanen regnes fra den BAKKEFØLGENDE basislinja, ikke fra der
+         karosseriet tilfeldigvis duver akkurat nå — ellers ville et dupp
+         i fjæringa i seg selv kunne kaste bilen i lufta */
+      var hBase = h - hOff;
+      var hBall = hBase + gSl*s*dt - .5*G*dt*dt;
+      /* epsilon, ikke margin: 0.2 px per steg tilsvarte å kreve ti ganger
+         tyngdekraften før bilen fikk slippe bakken */
+      if(hBall > hTer + .02 && s > 60){
+        grounded = false; s0 = s; airT = 0;
+        /* karosseriets egen fjærfart blir med ut i svevet — slipper man
+           kanten mens fjæra strekker seg, får man et lite ekstra napp */
+        vy = gSl*s - G*dt + hOffV;
+        h = hBall + hOff;
+        hOff = 0; hOffV = 0;
+        if(window.__LOG) __LOG.push({off:1, x:Math.round(x),
+          sl:+gSl.toFixed(2), s:Math.round(s)});
+        /* i lufta siger nesa mot en likevektsvinkel bestemt av farta ved
+           avsats: lav fart → nesa peker nedover langs bakken, høy fart →
+           nesa står til værs. det er hele spillet — farten FØR hoppet
+           bestemmer hvilken vinkel du kommer ned med. */
+        /* over nivå 6 stiger nesa mye brattere — flat ut over et ekte hopp
+           SKAL ende med hekken først i bakken */
+        /* Likevektsvinkelen i lufta bestemmes av FARTA ved utkast, slik
+           den opprinnelige spilldesignen sa: mer fart → nesa reiser seg
+           mer, lav fart → nesa peker nedover langs bakken. Lineær rundt et
+           nullpunkt ved middels fart. (Rampas bratthet kobles IKKE direkte
+           inn — den virker bare gjennom fysikken: bratt rampe saktner
+           bilen, og lavere utkastfart gir mindre nese-opp.) */
+        prate = Math.max(-.46, Math.min(.52, (s0-395)*.0020));
+      } else {
+        gSl = terrSl(x);
+        /* karosseriet er fjæret masse — det henger IKKE fast i bakken, men
+           svinger seg mot likevekt gjennom fjær og demper. Derfor blir det
+           stående høyt et øyeblikk etter et nedslag, og duver over kuler. */
+        var dmp = (hOffV < 0 ? FJDK : FJDR)*2.2;
+        hOffV += (-hOff*FJK*8 - hOffV*dmp)*dt;
+        /* Karosseriet skal ALDRI synke fortere enn fritt fall fra sin egen
+           høyde over kjørehøyde. Fjæra kan skyve OPP så hardt den vil
+           (kompresjon), men den skal ikke rykke kroppen NED fortere enn
+           tyngdekraften — det var den «magnetiske» nedsuginga etter hopp og
+           over kuler. sqrt(2·g·h) er farten et fritt fall fra høyden hOff
+           ville hatt. */
+        if(hOff > 0){
+          var vFall = Math.sqrt(2*G*hOff);
+          if(hOffV < -vFall) hOffV = -vFall;
+        }
+        hOff  += hOffV*dt;
+        /* Bunnstopp i kompresjon er en ekte mekanisk grense. */
+        if(hOff < -KOMPMAX){ hOff = -KOMPMAX; hOffV = Math.max(0, hOffV); }
+        if(hOff > 40){ hOff = 40; hOffV = Math.min(0, hOffV); }
+        h = hTer + hOff;
+        vy = s*gSl + hOffV;
+        var tt = Math.atan((terrH(x+WB/2)-terrH(x-WB/2))/WB);
+        thv += ((tt-th)*90 - thv*12)*dt;
+        th += thv*dt;
+      }
+    }
+    if(!grounded){
+      vy -= G*dt; h += vy*dt; airT += dt;
+      if(h-terrH(x) > airMax) airMax = h-terrH(x);
+      /* prate er her likevektsvinkelen — korte hopp rekker knapt å rotere,
+         lange svev legger seg helt inn mot den */
+      th += (prate - th)*Math.min(1, 2.6*dt);
+      var hw = Math.sin(th)*WB/2, cwb = Math.cos(th)*WB/2;
+      var fPen = terrH(x+cwb) - (h+hw);
+      var rPen = terrH(x-cwb) - (h-hw);
+      /* KONTAKT KREVER LUKKEFART — ikke bare overlapp.
+         Et hjul kan overlappe terrenget uten å lande: letter man med nesa
+         i været fra en bratt rampe, henger bakhjulet lavt og bak — nede i
+         rampa man nettopp forlot — men bakken faller unna fortere enn
+         hjulet synker, så bilen klarerer. Den gamle testen spurte bare
+         «overlapper hjulet bakken?» og slengte bilen rett ned igjen; det
+         var både den siste magnetiske effekten og grunnen til at bratte
+         ramper ikke ga svev i det hele tatt.
+         Lukkefart = hjulets vertikalfart minus terrengets endring under
+         det. Negativ = hjulet lukker mot bakken = ekte nedslag. */
+      var thd = (prate - th)*2.6;              /* pitch-rate, rad/s */
+      var fLukk = (vy + cwb*thd) - terrSl(x+cwb)*s;
+      var rLukk = (vy - cwb*thd) - terrSl(x-cwb)*s;
+      /* Bakhjulet ruller fortsatt på opprampa et lite øyeblikk etter at
+         nesa har lettet — ekte nok, men det er ikke en LANDING. Man kan
+         ikke lande mens man fortsatt stiger. Derfor teller bakhjulet bare
+         når bilen ikke lenger går oppover (vy <= 0). Framhjulet teller
+         alltid: treffer det noe som lukker, har man kjørt inn i en vegg.
+         (Uten dette fikk fort bil KORTERE svev enn langsom — nesa opp
+         presset bakhjulet ned i rampa og avlyste hoppet.) */
+      var traff = (fPen >= 0 && fLukk < 0) ||
+                  (rPen >= 0 && rLukk < 0 && vy <= 0);
+      if(Math.max(fPen, rPen) > 26) traff = true;   /* sikring mot gjennomfall */
+      if(traff){
+        land(fPen, rPen); if(state!=='kjor') return;
+      }
+    }
+
+    /* vannplask */
+    if(!splashed && grounded && Math.abs(x-PUDDLE)<45){
+      splashed=true; spawnSplash(); thud(180);
+    }
+    /* gruslegging fra bakhjulet */
+    if(grounded && s>240 && Math.random() < dt*22*(s/500)) spawnGrus();
+
+    warnT = Math.max(0, warnT-dt);
+    var now = performance.now();
+    downTimes = downTimes.filter(function(t){ return now-t < 1400; });
+  }
+  else if(state==='krasj'){
+    crashT += dt;
+    s = Math.max(0, s - 500*dt);
+    x += s*dt*.5;
+    th += crashDir*6*dt;
+    if(!grounded){
+      vy -= G*dt; h += vy*dt;
+      if(h < terrH(x)){ h = terrH(x); vy = Math.abs(vy)*.3; grounded = vy<40; }
+    }
+    if(Math.random()<dt*22) spawnDust(x, terrH(x), 1.2);
+    if(crashT > 1.5 && !overlayOn()) visKrasj();
+  }
+  else if(state==='motor'){
+    blowT += dt;
+    s = Math.max(0, s - 300*dt);
+    x += s*dt;
+    if(grounded) h = terrH(x);
+    if(blowT<1.4 && Math.random()<dt*30) spawnFire();
+    if(Math.random()<dt*20) spawnRoyk();
+    if(blowT > 2.1 && !overlayOn()) visMotor();
+  }
+  else if(state==='maal'){
+    finT += dt;
+    s = Math.max(0, s - 260*dt);
+    x += s*dt;
+    if(grounded){ h = terrH(x); }
+    else { vy -= G*dt; h += vy*dt; if(h<terrH(x)){h=terrH(x);grounded=true;} }
+  }
+  else if(state==='nedtelling'){
+    countT -= dt;
+    if(countT <= 0){ state='kjor'; tid=0; }
+  }
+
+  /* fjæring (ren visuell) + hjulspinn.
+     Hjula er lett, ufjæret masse: de FØLGER underlaget nesten momentant —
+     opp over vaskebrett, rett ned i full droop i svev. Karosseriet er den
+     fjærede massen som svarer tregt oppå, styrt av FJK/FJDK/FJDR fra oppsettet.
+     KOMPMAX (frihøyde) er mekanisk slag opp i buen. */
+  /* ÉN kontinuerlig formel for begge tilstander: hjulet følger bakken så
+     lenge den er innen rekkevidde, og glir naturlig ut mot full droop når
+     terrenget faller unna — ingen brå hopp når grounded-flagget vipper,
+     og framhjulet "limer" seg ikke fast over bakkekammer. */
+  var hw2 = Math.sin(th)*WB/2, cw2 = Math.cos(th)*WB/2;
+  var tF = Math.max(DROOP, Math.min(KOMPMAX, terrH(x+cw2)-(h+hw2)));
+  var tR = Math.max(DROOP, Math.min(KOMPMAX, terrH(x-cw2)-(h-hw2)));
+  /* kompresjon er nesten momentan (~20 ms), men UTfjæringa er begrensa av
+     tyngdekrafta — hjulet kan ikke jage bakken nedover fortere enn det
+     faller. Det er dét som slipper framhjulet over bakkekammer i stedet
+     for at det limer seg nedover. */
+  var wk = Math.min(1, 45*dt), utMax = 95*dt;
+  var nyF = dF + (tF-dF)*wk; if(nyF < dF-utMax) nyF = dF-utMax; dF = nyF;
+  var nyR = dR + (tR-dR)*wk; if(nyR < dR-utMax) nyR = dR-utMax; dR = nyR;
+  /* (karosseriets hiv ligger nå i h/hOff — selve fysikken, ikke en egen
+     visuell etterlikning. Hjula henger av h gjennom dF/dR.) */
+
+  /* BUNNSLAG i kompresjon. Kjører du fort ned i et skarpt søkk (kuoppa),
+     presses framhjulet forbi bunnstoppen KOMPMAX, og HVOR HARDT avhenger av
+     kompresjonsFARTA — hvor fort motveggen reiser seg under hjulet, altså
+     helninga ganger farta. Går det for fort slår fjæringa i bånn og nesa
+     graver seg ned = krasj. Dermed må du ned i fart før de skarpe søkkene;
+     tar du dem rolig, følger hjulet med og alt går bra. */
+  if(grounded && state==='kjor'){
+    var overF = (terrH(x+cw2)-(h+hw2)) - KOMPMAX;
+    var kompFart = terrSl(x+cw2)*s;
+    if(overF > 3 && kompFart > 400){
+      crash('nese');
+      pops.push({x:x, y:h+95, txt:'pohjaan! nesa i bånn', age:0, c:'#ffb0a0'});
+    }
+  }
+  spin += (grounded ? s/RW : s/RW*.35)*dt;
+
+  /* kamera */
+  camX = x - (cssW/zoom)*.34;
+  /* Kameraet henger etter BILEN med demping. Etterslepet er hele poenget:
+     i et svev stiger bilen mye fortere enn kameraet rekker å følge, så
+     hoppet leses tydelig på skjermen — samtidig som bilen alltid ender
+     opp sentrert igjen, uansett hvor langt løypa faller. (Før var kameraet
+     forankret i bakken; det holdt bilen på plass, men lot verden gli.) */
+  var mål = h + 34;
+  camH += (mål-camH)*Math.min(1, 3*dt);
+  shake = Math.max(0, shake - 26*dt);
+  flashT = Math.max(0, flashT - dt);
+  blinkT += dt;
+
+  /* motorlyd */
+  if(A.ctx && state!=='av'){
+    if(state==='motor' || state==='krasj' && crashT>0.5) engSet(40, 0);
+    else {
+      var f = 52 + s*.22 + (grounded?0:16) + L*4;
+      engSet(f, (state==='kjor'||state==='nedtelling') ? .05 : .02);
+    }
+  }
+
+  /* partikler */
+  for(var i=parts.length-1;i>=0;i--){
+    var p = parts[i]; p.age += dt;
+    if(p.age > p.life){ parts.splice(i,1); continue; }
+    p.x += p.vx*dt; p.y += p.vy*dt;
+    if(p.t==='grus'||p.t==='vann'||p.t==='spark') p.vy -= 420*dt;
+    else p.vy *= (1-1.4*dt);
+  }
+  for(var i=pops.length-1;i>=0;i--){
+    var q = pops[i]; q.age += dt; q.y += 34*dt;
+    if(q.age > 1.4) pops.splice(i,1);
+  }
+}
+
+/* ================= TEGNING ================= */
+function SX(wx){ return (wx-camX)*zoom; }
+function SY(wh){ return cssH*.60 - (wh-camH)*zoom; }
+
+/* cy er STAMMENS FOT — samme regel som bjork(). Før lå cy ved barmassens
+   underkant mens stammen stakk 0,22·s videre ned, så grantrærne havnet
+   for dypt i bakken når begge typene ble plantet på samme linje. */
+function gran(cx, cy, s, mork){
+  var by = cy - s*.22;
+  ctx2.fillStyle = mork ? '#33584a' : '#3f6b52';
+  for(var i=0;i<3;i++){
+    var w = s*(1-.24*i), yy = by - s*.52*i;
+    ctx2.beginPath();
+    ctx2.moveTo(cx, yy - s*.8);
+    ctx2.lineTo(cx-w*.44, yy); ctx2.lineTo(cx+w*.44, yy);
+    ctx2.fill();
+  }
+  ctx2.fillStyle = '#5c4632';
+  ctx2.fillRect(cx-s*.05, by-2, s*.1, s*.22+2);
+}
+function bjork(cx, cy, s){
+  ctx2.fillStyle = '#f2ede2';
+  ctx2.fillRect(cx-s*.05, cy-s*1.05, s*.1, s*1.05);
+  ctx2.fillStyle = '#3c3c38';
+  for(var i=0;i<3;i++) ctx2.fillRect(cx-s*.05, cy-s*(.25+.28*i), s*.05, s*.05);
+  ctx2.fillStyle = '#84b568';
+  ctx2.beginPath(); ctx2.ellipse(cx, cy-s*1.2, s*.42, s*.5, 0, 0, 7); ctx2.fill();
+}
+/* Punainen mökki — falurødt tømmerhus med hvite lister, slik de står
+   langs de finske skogsveiene. Grunnmuren stikker ned UNDER cy, så huset
+   graves ned i bakken i stedet for å stå oppå den. */
+function hus(cx, cy, s){
+  var w = s*1.5, h = s*.78;
+  ctx2.fillStyle = '#6f6b62';                       /* grunnmur i stein */
+  ctx2.fillRect(cx-w/2-s*.03, cy-s*.12, w+s*.06, s*.3);
+  ctx2.fillStyle = '#a33b2e';                       /* vegg */
+  ctx2.fillRect(cx-w/2, cy-h-s*.06, w, h);
+  ctx2.fillStyle = '#f0ead8';                       /* hvite hjørnelister */
+  ctx2.fillRect(cx-w/2, cy-h-s*.06, s*.1, h);
+  ctx2.fillRect(cx+w/2-s*.1, cy-h-s*.06, s*.1, h);
+  ctx2.fillStyle = '#3a3f42';                       /* tak med utstikk */
+  ctx2.beginPath();
+  ctx2.moveTo(cx-s*.97, cy-h-s*.02);
+  ctx2.lineTo(cx, cy-h-s*.54);
+  ctx2.lineTo(cx+s*.97, cy-h-s*.02);
+  ctx2.closePath(); ctx2.fill();
+  ctx2.strokeStyle = '#f0ead8';                     /* vindskier */
+  ctx2.lineWidth = Math.max(1.2, s*.042);
+  ctx2.beginPath();
+  ctx2.moveTo(cx-s*.97, cy-h-s*.02); ctx2.lineTo(cx, cy-h-s*.54);
+  ctx2.lineTo(cx+s*.97, cy-h-s*.02);
+  ctx2.stroke();
+  ctx2.fillStyle = '#8d8579';                       /* pipe */
+  ctx2.fillRect(cx+s*.34, cy-h-s*.48, s*.15, s*.3);
+  ctx2.fillStyle = 'rgba(242,242,240,.5)';          /* røyk */
+  for(var i=0;i<3;i++){
+    ctx2.beginPath();
+    ctx2.arc(cx+s*.42+i*s*.06, cy-h-s*(.58+i*.14), s*(.055+i*.028), 0, 7);
+    ctx2.fill();
+  }
+  function vindu(vx){                               /* vindu med sprosser */
+    ctx2.fillStyle = '#f0ead8';
+    ctx2.fillRect(vx-s*.15, cy-h+s*.12, s*.3, s*.28);
+    ctx2.fillStyle = '#8fb6c4';
+    ctx2.fillRect(vx-s*.115, cy-h+s*.15, s*.23, s*.22);
+    ctx2.fillStyle = '#f0ead8';
+    ctx2.fillRect(vx-s*.014, cy-h+s*.15, s*.028, s*.22);
+    ctx2.fillRect(vx-s*.115, cy-h+s*.245, s*.23, s*.026);
+  }
+  vindu(cx-s*.42); vindu(cx+s*.42);
+  ctx2.fillStyle = '#f0ead8';                       /* dør */
+  ctx2.fillRect(cx-s*.13, cy-s*.48, s*.26, s*.42);
+  ctx2.fillStyle = '#7c4a33';
+  ctx2.fillRect(cx-s*.1, cy-s*.45, s*.2, s*.39);
+  ctx2.fillStyle = '#d9b64f';
+  ctx2.beginPath(); ctx2.arc(cx+s*.06, cy-s*.25, s*.022, 0, 7); ctx2.fill();
+}
+/* Nordisk kors: felt + korsfarge, og for norsk/islandsk en hvit kant
+   rundt korset. Estland og Latvia er striper og tegnes for seg. */
+var FLAGGFARGER = {
+  fi:{felt:'#ffffff', kors:'#003580'},
+  se:{felt:'#0d5eaf', kors:'#fecc00'},
+  dk:{felt:'#c8102e', kors:'#ffffff'},
+  no:{felt:'#ba0c2f', kors:'#00205b', kant:'#ffffff'},
+  is:{felt:'#02529c', kors:'#dc1e35', kant:'#ffffff'}
+};
+function flagg(cx, cy, s, land){
+  ctx2.strokeStyle = '#e8e4da'; ctx2.lineWidth = 2;
+  ctx2.beginPath(); ctx2.moveTo(cx, cy); ctx2.lineTo(cx, cy-s); ctx2.stroke();
+  var w = s*.62, h = s*.38, y0 = cy-s;
+  if(land === 'ee' || land === 'lv'){
+    if(land === 'ee'){                       /* estisk trikolor */
+      ctx2.fillStyle = '#0072ce'; ctx2.fillRect(cx, y0,        w, h/3);
+      ctx2.fillStyle = '#101010'; ctx2.fillRect(cx, y0+h/3,    w, h/3);
+      ctx2.fillStyle = '#f5f5f5'; ctx2.fillRect(cx, y0+2*h/3,  w, h/3);
+    } else {                                 /* latvisk */
+      ctx2.fillStyle = '#9e3039'; ctx2.fillRect(cx, y0, w, h);
+      ctx2.fillStyle = '#f5f5f5'; ctx2.fillRect(cx, y0+h*.4, w, h*.2);
+    }
+    return;
+  }
+  var f = FLAGGFARGER[land] || FLAGGFARGER.fi;
+  ctx2.fillStyle = f.felt; ctx2.fillRect(cx, y0, w, h);
+  if(f.kant){
+    ctx2.fillStyle = f.kant;
+    ctx2.fillRect(cx, y0+s*.10, w, s*.17);
+    ctx2.fillRect(cx+s*.13, y0, s*.17, h);
+  }
+  ctx2.fillStyle = f.kors;
+  ctx2.fillRect(cx, y0+s*.13, w, s*.11);
+  ctx2.fillRect(cx+s*.16, y0, s*.11, h);
+}
+/* ---------- landemerker ---------- */
+function vannturn(cx, cy, s){          /* vanntårn */
+  ctx2.strokeStyle = '#8a8f8c'; ctx2.lineWidth = Math.max(1.5, s*.055);
+  ctx2.beginPath();
+  ctx2.moveTo(cx-s*.3, cy);  ctx2.lineTo(cx-s*.13, cy-s*.95);
+  ctx2.moveTo(cx+s*.3, cy);  ctx2.lineTo(cx+s*.13, cy-s*.95);
+  ctx2.moveTo(cx-s*.24, cy-s*.36); ctx2.lineTo(cx+s*.24, cy-s*.36);
+  ctx2.stroke();
+  ctx2.fillStyle = '#dcd8cc';
+  ctx2.beginPath();
+  ctx2.moveTo(cx-s*.34, cy-s*.93); ctx2.lineTo(cx+s*.34, cy-s*.93);
+  ctx2.lineTo(cx+s*.26, cy-s*1.42); ctx2.lineTo(cx-s*.26, cy-s*1.42);
+  ctx2.closePath(); ctx2.fill();
+  ctx2.fillStyle = '#c0392b';
+  ctx2.fillRect(cx-s*.31, cy-s*1.14, s*.62, s*.12);
+}
+function kirke(cx, cy, s){             /* hvit trekirke med spir */
+  ctx2.fillStyle = '#eae6da';
+  ctx2.fillRect(cx-s*.42, cy-s*.72, s*.84, s*.72);
+  ctx2.fillStyle = '#3a3f42';
+  ctx2.beginPath();
+  ctx2.moveTo(cx-s*.5, cy-s*.7); ctx2.lineTo(cx, cy-s*1.02); ctx2.lineTo(cx+s*.5, cy-s*.7);
+  ctx2.fill();
+  ctx2.fillStyle = '#eae6da';
+  ctx2.fillRect(cx-s*.15, cy-s*1.36, s*.3, s*.66);
+  ctx2.fillStyle = '#3a3f42';
+  ctx2.beginPath();
+  ctx2.moveTo(cx-s*.2, cy-s*1.34); ctx2.lineTo(cx, cy-s*1.94); ctx2.lineTo(cx+s*.2, cy-s*1.34);
+  ctx2.fill();
+  ctx2.strokeStyle = '#d9b64f'; ctx2.lineWidth = 2;
+  ctx2.beginPath(); ctx2.moveTo(cx, cy-s*1.93); ctx2.lineTo(cx, cy-s*2.08); ctx2.stroke();
+  ctx2.fillStyle = '#6d7d86';
+  ctx2.fillRect(cx-s*.09, cy-s*.44, s*.18, s*.44);
+}
+function elg(cx, cy, s){               /* elg i veikanten */
+  ctx2.fillStyle = '#4a3627';
+  ctx2.fillRect(cx-s*.34, cy-s*.64, s*.68, s*.3);
+  ctx2.fillRect(cx-s*.26, cy-s*.36, s*.09, s*.36);
+  ctx2.fillRect(cx-s*.04, cy-s*.36, s*.09, s*.36);
+  ctx2.fillRect(cx+s*.2, cy-s*.36, s*.09, s*.36);
+  ctx2.fillRect(cx+s*.28, cy-s*.9, s*.15, s*.32);
+  ctx2.beginPath();
+  ctx2.ellipse(cx+s*.44, cy-s*.92, s*.17, s*.1, 0, 0, 7); ctx2.fill();
+  ctx2.strokeStyle = '#6b5138'; ctx2.lineWidth = Math.max(1.4, s*.05);
+  ctx2.beginPath();
+  ctx2.moveTo(cx+s*.34, cy-s*1.0); ctx2.lineTo(cx+s*.2, cy-s*1.22);
+  ctx2.moveTo(cx+s*.46, cy-s*1.0); ctx2.lineTo(cx+s*.6, cy-s*1.2);
+  ctx2.stroke();
+}
+function stein(cx, cy, s){             /* flyttblokk med mose */
+  ctx2.fillStyle = '#8d9299';
+  ctx2.beginPath();
+  ctx2.moveTo(cx-s*.5, cy);     ctx2.lineTo(cx-s*.44, cy-s*.42);
+  ctx2.lineTo(cx-s*.12, cy-s*.62); ctx2.lineTo(cx+s*.28, cy-s*.5);
+  ctx2.lineTo(cx+s*.5, cy);
+  ctx2.closePath(); ctx2.fill();
+  ctx2.fillStyle = '#727880';
+  ctx2.beginPath();
+  ctx2.moveTo(cx+s*.04, cy); ctx2.lineTo(cx+s*.28, cy-s*.5);
+  ctx2.lineTo(cx+s*.5, cy); ctx2.closePath(); ctx2.fill();
+  ctx2.fillStyle = '#6f9b5a';
+  ctx2.beginPath();
+  ctx2.ellipse(cx-s*.16, cy-s*.58, s*.19, s*.07, 0, 0, 7); ctx2.fill();
+}
+function telt(cx, cy, s){              /* servicetelt */
+  ctx2.fillStyle = '#e8741e';
+  ctx2.beginPath();
+  ctx2.moveTo(cx-s*.62, cy-s*.5); ctx2.lineTo(cx, cy-s*.88);
+  ctx2.lineTo(cx+s*.62, cy-s*.5); ctx2.closePath(); ctx2.fill();
+  ctx2.fillStyle = '#f0ead8';
+  ctx2.fillRect(cx-s*.5, cy-s*.5, s, s*.5);
+  ctx2.strokeStyle = '#9a9186'; ctx2.lineWidth = 1.5;
+  ctx2.beginPath();
+  ctx2.moveTo(cx-s*.5, cy-s*.5); ctx2.lineTo(cx-s*.5, cy);
+  ctx2.moveTo(cx+s*.5, cy-s*.5); ctx2.lineTo(cx+s*.5, cy);
+  ctx2.stroke();
+  ctx2.fillStyle = '#27837c';
+  ctx2.fillRect(cx-s*.24, cy-s*.34, s*.48, s*.12);
+}
+function vindmolle(cx, cy, s){         /* vindturbin — vingene går rundt */
+  ctx2.fillStyle = '#e6e3da';
+  ctx2.beginPath();
+  ctx2.moveTo(cx-s*.07, cy);        ctx2.lineTo(cx-s*.03, cy-s*1.58);
+  ctx2.lineTo(cx+s*.03, cy-s*1.58); ctx2.lineTo(cx+s*.07, cy);
+  ctx2.closePath(); ctx2.fill();
+  ctx2.strokeStyle = '#f2f0e8';
+  ctx2.lineWidth = Math.max(2, s*.075); ctx2.lineCap = 'round';
+  for(var i=0;i<3;i++){
+    var a = blinkT*.6 + i*Math.PI*2/3;
+    ctx2.beginPath();
+    ctx2.moveTo(cx, cy-s*1.58);
+    ctx2.lineTo(cx + Math.cos(a)*s*.56, cy-s*1.58 + Math.sin(a)*s*.56);
+    ctx2.stroke();
+  }
+  ctx2.lineCap = 'butt';
+  ctx2.fillStyle = '#c9c5ba';
+  ctx2.beginPath(); ctx2.arc(cx, cy-s*1.58, s*.075, 0, 7); ctx2.fill();
+}
+function tarn(cx, cy, s){              /* utsiktstårn i tre */
+  ctx2.strokeStyle = '#7a6045'; ctx2.lineWidth = Math.max(1.6, s*.06);
+  ctx2.beginPath();
+  ctx2.moveTo(cx-s*.32, cy); ctx2.lineTo(cx-s*.14, cy-s*1.12);
+  ctx2.moveTo(cx+s*.32, cy); ctx2.lineTo(cx+s*.14, cy-s*1.12);
+  ctx2.moveTo(cx-s*.26, cy-s*.38); ctx2.lineTo(cx+s*.26, cy-s*.38);
+  ctx2.moveTo(cx-s*.2, cy-s*.75);  ctx2.lineTo(cx+s*.2, cy-s*.75);
+  ctx2.stroke();
+  ctx2.fillStyle = '#8d6f4e';
+  ctx2.fillRect(cx-s*.3, cy-s*1.24, s*.6, s*.12);
+  ctx2.fillStyle = '#4a5b52';
+  ctx2.beginPath();
+  ctx2.moveTo(cx-s*.34, cy-s*1.24); ctx2.lineTo(cx, cy-s*1.58);
+  ctx2.lineTo(cx+s*.34, cy-s*1.24); ctx2.fill();
+}
+var MARKTEGN = {vannturn:vannturn, kirke:kirke, elg:elg, stein:stein,
+                telt:telt, vindmolle:vindmolle, tarn:tarn};
+/* Varselskilt i veikanten. (Høyballene lå før her — de så ut som hindre
+   midt i sporet, og det er misvisende når man ikke kan styre unna.) */
+function skilt(cx, cy, s){
+  ctx2.fillStyle = '#6b5a44';
+  ctx2.fillRect(cx-s*.05, cy-s*.95, s*.1, s*.95);        /* stolpe */
+  ctx2.fillStyle = '#e8c020';                             /* gul varselrombe */
+  ctx2.beginPath();
+  ctx2.moveTo(cx, cy-s*1.62);
+  ctx2.lineTo(cx+s*.44, cy-s*1.22);
+  ctx2.lineTo(cx, cy-s*.82);
+  ctx2.lineTo(cx-s*.44, cy-s*1.22);
+  ctx2.closePath(); ctx2.fill();
+  ctx2.strokeStyle = '#2a2a28'; ctx2.lineWidth = Math.max(1.2, s*.05);
+  ctx2.stroke();
+  ctx2.lineWidth = Math.max(1.4, s*.06);                  /* hopp-symbol */
+  ctx2.beginPath();
+  ctx2.moveTo(cx-s*.18, cy-s*1.12);
+  ctx2.quadraticCurveTo(cx, cy-s*1.46, cx+s*.18, cy-s*1.12);
+  ctx2.stroke();
+}
+function publikum(wx, n){
+  var jubel = !grounded && Math.abs(x-wx) < 430;
+  for(var i=0;i<n;i++){
+    var px = wx + (i-(n-1)/2)*17 + hsh(wx+i)*6;
+    var py = terrH(px)-2;          /* føttene ned i bakken, ikke svevende over */
+    var sx = SX(px), sy = SY(py);
+    var hopp = jubel ? Math.abs(Math.sin(blinkT*9+i))*5*zoom : 0;
+    var cols = ['#d02826','#1b3f8f','#5bc2e7','#e8e2d4','#e8741e'];
+    ctx2.fillStyle = cols[Math.floor(hsh(wx*3+i)*cols.length)];
+    ctx2.fillRect(sx-4*zoom, sy-17*zoom-hopp, 8*zoom, 12*zoom);
+    ctx2.fillStyle = '#e9c9a8';
+    ctx2.beginPath(); ctx2.arc(sx, sy-21*zoom-hopp, 4.2*zoom, 0, 7); ctx2.fill();
+    if(jubel){
+      ctx2.strokeStyle = ctx2.fillStyle; ctx2.lineWidth = 2*zoom;
+      ctx2.beginPath();
+      ctx2.moveTo(sx-4*zoom, sy-16*zoom-hopp); ctx2.lineTo(sx-8*zoom, sy-25*zoom-hopp);
+      ctx2.moveTo(sx+4*zoom, sy-16*zoom-hopp); ctx2.lineTo(sx+8*zoom, sy-25*zoom-hopp);
+      ctx2.stroke();
+    }
+  }
+}
+function portal(a){
+  var sx = SX(a.x), gy = SY(terrH(a.x));
+  var hgt = 120*zoom, w = 92*zoom;
+  ctx2.fillStyle = '#dfd9cc';
+  ctx2.fillRect(sx-w/2-4*zoom, gy-hgt, 8*zoom, hgt);
+  ctx2.fillRect(sx+w/2-4*zoom, gy-hgt, 8*zoom, hgt);
+  ctx2.fillStyle = '#1b3f8f';
+  ctx2.fillRect(sx-w/2-8*zoom, gy-hgt, w+16*zoom, 26*zoom);
+  ctx2.fillStyle = '#fff';
+  ctx2.font = '700 '+Math.round(11*zoom)+'px Helvetica,Arial';
+  ctx2.textAlign = 'center';
+  ctx2.fillText(a.txt, sx, gy-hgt+17*zoom);
+  ctx2.fillStyle = '#d02826';
+  ctx2.fillRect(sx-w/2-8*zoom, gy-hgt+26*zoom, w+16*zoom, 5*zoom);
+}
+
+function tegn(){
+  ctx2.setTransform(dpr,0,0,dpr,0,0);
+  var shx = shake ? (Math.random()*2-1)*shake*.6 : 0;
+  var shy = shake ? (Math.random()*2-1)*shake*.6 : 0;
+  ctx2.translate(shx, shy);
+
+  /* himmel */
+  var sky = ctx2.createLinearGradient(0,0,0,cssH);
+  sky.addColorStop(0,'#a6d9ef'); sky.addColorStop(.62,'#d6ecda'); sky.addColorStop(1,'#e6efdc');
+  ctx2.fillStyle = sky; ctx2.fillRect(-8,-8,cssW+16,cssH+16);
+
+  /* sol + skyer */
+  ctx2.fillStyle = 'rgba(255,244,200,.9)';
+  ctx2.beginPath(); ctx2.arc(cssW*.78 - camX*.02, cssH*.16, 26, 0, 7); ctx2.fill();
+  ctx2.fillStyle = 'rgba(255,255,255,.85)';
+  for(var i=0;i<5;i++){
+    var cx = ((i*430 + 80 - camX*.05) % (cssW+340)) - 170;
+    var cy = cssH*(.09+.05*hsh(i+40));
+    ctx2.beginPath();
+    ctx2.ellipse(cx, cy, 42+16*hsh(i), 11+4*hsh(i+9), 0, 0, 7);
+    ctx2.ellipse(cx+26, cy-6, 24, 9, 0, 0, 7);
+    ctx2.fill();
+  }
+
+  /* Fjern bakgrunn står HELT STILLE loddrett — den er uendelig langt unna.
+     Mellomlaget får bare et lite utslag, og det måles mot lokal bakke
+     (ikke absolutt høyde), så det svarer på hopp i stedet for på at løypa
+     faller 500 px fra start til mål. */
+  var camRel = camH - terrH(x);
+
+  /* SILHUETTENE MÅ RULLE JEVNT. Før lå knekkpunktene fast på skjermen
+     mens høydene ble slått opp på nytt for hver piksel kameraet flyttet
+     seg — åsene hoppet mellom former i stedet for å gli. Nå flytter selve
+     punktene seg med parallaksen, og hash-en er låst til en fast indeks.
+     Horisonten er så godt som uendelig unna og skal bare panorere sakte;
+     mellomgrunnen går merkbart raskere, men langt fra veiens fart. */
+  var P_FJERN = .04, P_MIDT = .42;
+
+  /* fjern skog + innsjø — horisonten */
+  var yFar = cssH*.42;
+  var offF = camX*P_FJERN*zoom, stegF = 26;
+  var iF0 = Math.floor((offF-40)/stegF), iF1 = Math.ceil((offF+cssW+40)/stegF);
+  ctx2.fillStyle = '#517263';
+  ctx2.beginPath();
+  ctx2.moveTo(iF0*stegF-offF, yFar+18);
+  for(var i=iF0; i<=iF1; i++)
+    ctx2.lineTo(i*stegF-offF, yFar + 18 - (6+hsh(i)*14));
+  ctx2.lineTo(iF1*stegF-offF, yFar+40);
+  ctx2.lineTo(iF0*stegF-offF, yFar+40);
+  ctx2.closePath(); ctx2.fill();
+  ctx2.fillStyle = '#a5d3e4';
+  ctx2.fillRect(-8, yFar+18, cssW+16, 15);
+  ctx2.fillStyle = 'rgba(255,255,255,.5)';
+  for(var i=0;i<7;i++){
+    var per = cssW+200;
+    var gx = ((((i*260 - offF) % per) + per) % per) - 100;
+    ctx2.fillRect(gx, yFar+22+ (i%3)*3, 26, 1.6);
+  }
+
+  /* mellomskog — MELLOMGRUNNEN. Her hører også bygningene hjemme. */
+  var yMid = cssH*.52 + camRel*.12*zoom;
+  var offM = camX*P_MIDT*zoom, stegM = 18;
+  var iM0 = Math.floor((offM-40)/stegM), iM1 = Math.ceil((offM+cssW+40)/stegM);
+  function midY(i){ return yMid + 12*Math.sin(i*.7) - hsh(i+300)*10; }
+  ctx2.fillStyle = '#49775c';
+  ctx2.beginPath();
+  ctx2.moveTo(iM0*stegM-offM, midY(iM0));
+  for(var i=iM0+1; i<=iM1; i++) ctx2.lineTo(i*stegM-offM, midY(i));
+  ctx2.lineTo(iM1*stegM-offM, cssH+8);
+  ctx2.lineTo(iM0*stegM-offM, cssH+8);
+  ctx2.closePath(); ctx2.fill();
+
+  /* Bygninger og konstruksjoner står i mellomgrunnen — samme parallakse
+     som mellomskogen, satt lavt så de står nede i skogbrynet, og skalert
+     ned for avstanden. De står loddrett; bare bakkeobjektene følger
+     terrengets helning. */
+  /* Skogen i mellomgrunnen: mange små grantrær tett i tett, plantet rett
+     på silhuett-linja så det leses som SKOG og ikke som enkelttrær. Samme
+     indeks og steg som silhuetten, så de ruller jevnt med den — før sto
+     de på faste skjermposisjoner og byttet størrelse under seg selv når
+     kameraet flyttet seg, og det var det som flimret.
+     Skogen tegnes FØR bygningene, så trærne står bak dem. */
+  for(var i=iM0; i<=iM1; i++){
+    if(hsh(i+500) < .82)
+      gran(i*stegM-offM, midY(i)+7*zoom, (7+hsh(i+80)*6)*zoom, true);
+  }
+  MARKER_BYGG.forEach(function(m){
+    var f = MARKTEGN[m.k];
+    if(!f) return;
+    var sx = (m.x - camX)*P_MIDT*zoom + cssW*.34*(1-P_MIDT);
+    if(sx < -160 || sx > cssW+160) return;
+    f(sx, yMid + 20*zoom, m.bs*zoom);
+  });
+
+  /* ===== verdenslaget ===== */
+  var wx0 = camX - 60, wx1 = camX + cssW/zoom + 60;
+
+  /* trær og pynt bak veien */
+  /* Begge treslag måler nå fra stammefoten, så samme nedsenking gjelder
+     for begge: 4 px ned i bakken. De tegnes før veifyllet, så foten dekkes. */
+  TREES.forEach(function(t){
+    if(t.x < wx0-60 || t.x > wx1+60) return;
+    var gy = SY(terrH(t.x)) + 4*zoom;
+    if(t.k==='gran') gran(SX(t.x), gy, t.s*zoom, false);
+    else bjork(SX(t.x), gy, t.s*zoom);
+  });
+  /* Hytta plantes langs bakken som de andre bakkeobjektene — den lå før
+     10 enheter OVER terrenget og svevde derfor synlig. */
+  if(COTTAGE > wx0-180 && COTTAGE < wx1+180){
+    var hHalv = 58*.78;
+    var hhV = terrH(COTTAGE-hHalv), hhH = terrH(COTTAGE+hHalv);
+    ctx2.save();
+    ctx2.translate(SX(COTTAGE), SY((hhV+hhH)/2 - 2));
+    ctx2.rotate(-Math.atan2(hhH-hhV, hHalv*2));
+    hus(0, 0, 58*zoom);
+    ctx2.restore();
+  }
+  /* Landemerker. Objektene har bredde, så de kan ikke settes på ÉN
+     bakkehøyde — i en skråning ville den ene sida henge i lufta. Vi måler
+     bakken under begge ytterkantene, legger basislinja langs korda mellom
+     dem og vipper hele objektet i samme vinkel. Da står beina plantet på
+     begge sider, uansett helning. */
+  LANDMARKS.forEach(function(m){
+    if(m.x < wx0-220 || m.x > wx1+220) return;
+    var f = MARKTEGN[m.k];
+    if(!f) return;
+    var halv = m.s*.42;                        /* halve fotavtrykket */
+    var hV = terrH(m.x-halv), hH = terrH(m.x+halv);
+    var ang = Math.atan2(hH-hV, halv*2);       /* bakkens vinkel under objektet */
+    var basis = (hV+hH)/2 - 1;                 /* 1 px ned i bakken: ingen glippe */
+    ctx2.save();
+    ctx2.translate(SX(m.x), SY(basis));
+    ctx2.rotate(-ang);                         /* skjerm-y peker ned */
+    /* liten skygge i foten så objektet ikke ser påklistret ut */
+    ctx2.fillStyle = 'rgba(40,55,45,.16)';
+    ctx2.beginPath();
+    ctx2.ellipse(0, 0, halv*zoom, 3.5*zoom, 0, 0, 7);
+    ctx2.fill();
+    f(0, 0, m.s*zoom);
+    ctx2.restore();
+  });
+  FLAGS.forEach(function(f){
+    if(f.x<wx0||f.x>wx1) return;
+    flagg(SX(f.x), SY(terrH(f.x))+2*zoom, 52*zoom, f.l);
+  });
+  POSTS.forEach(function(px){
+    if(px<wx0||px>wx1) return;
+    var sx = SX(px), sy = SY(terrH(px)) + 3*zoom;   /* foten ned i bakken */
+    ctx2.fillStyle = '#f0ead8'; ctx2.fillRect(sx-1.5*zoom, sy-19*zoom, 3*zoom, 19*zoom);
+    ctx2.fillStyle = '#d02826'; ctx2.fillRect(sx-1.5*zoom, sy-19*zoom, 3*zoom, 5*zoom);
+  });
+  CROWDS.forEach(function(cx){
+    if(cx<wx0-120||cx>wx1+120) return;
+    publikum(cx, 6+Math.floor(hsh(cx)*4));
+  });
+  /* Varselskilta hører hjemme HER — før veifyllet. Da graves foten deres
+     ned i bakken sammen med resten av veikant-pynten. Lå de etter veien,
+     ble underkanten stående synlig oppå grusen. */
+  BALES.forEach(function(bx){
+    if(bx<wx0||bx>wx1) return;
+    skilt(SX(bx), SY(terrH(bx)) + 3*zoom, 26*zoom);
+  });
+  ARCHES.forEach(function(a){ if(a.x>wx0-80 && a.x<wx1+80) portal(a); });
+
+  /* gressfrynse bak veikanten */
+  ctx2.fillStyle = '#4d7f4b';
+  ctx2.beginPath();
+  ctx2.moveTo(SX(wx0), SY(terrH(wx0))-4*zoom);
+  for(var wx=wx0; wx<=wx1; wx+=10) ctx2.lineTo(SX(wx), SY(terrH(wx))-4*zoom);
+  ctx2.lineTo(SX(wx1), cssH+8); ctx2.lineTo(SX(wx0), cssH+8);
+  ctx2.fill();
+
+  /* selve grusveien */
+  var grad = ctx2.createLinearGradient(0, cssH*.4, 0, cssH);
+  grad.addColorStop(0, '#cca672'); grad.addColorStop(1, '#93714c');
+  ctx2.fillStyle = grad;
+  ctx2.beginPath();
+  ctx2.moveTo(SX(wx0), SY(terrH(wx0)));
+  for(var wx=wx0; wx<=wx1; wx+=8) ctx2.lineTo(SX(wx), SY(terrH(wx)));
+  ctx2.lineTo(SX(wx1), cssH+8); ctx2.lineTo(SX(wx0), cssH+8);
+  ctx2.fill();
+  /* lys toppkant + steinprikker */
+  ctx2.strokeStyle = '#e7c78f'; ctx2.lineWidth = 3.5*zoom;
+  ctx2.beginPath();
+  ctx2.moveTo(SX(wx0), SY(terrH(wx0)));
+  for(var wx=wx0; wx<=wx1; wx+=8) ctx2.lineTo(SX(wx), SY(terrH(wx)));
+  ctx2.stroke();
+  ctx2.fillStyle = 'rgba(90,65,40,.4)';
+  for(var wx=Math.floor(wx0/22)*22; wx<=wx1; wx+=22){
+    var r = hsh(wx);
+    if(r<.55) ctx2.fillRect(SX(wx+r*14), SY(terrH(wx))+(4+r*16)*zoom, 2.4*zoom, 1.8*zoom);
+  }
+
+  /* pytt */
+  if(PUDDLE>wx0 && PUDDLE<wx1){
+    ctx2.fillStyle = 'rgba(140,190,215,.85)';
+    ctx2.beginPath();
+    ctx2.ellipse(SX(PUDDLE), SY(terrH(PUDDLE))+2*zoom, 46*zoom, 5*zoom, 0, 0, 7);
+    ctx2.fill();
+  }
+
+  /* ===== bilen ===== */
+  if(spritesOK===2 && state!=='av'){
+    var axC = SY(h + RW);  /* akselhøyde på skjerm */
+    var sxc = SX(x);
+    /* skygge */
+    var gapp = Math.max(0, h - terrH(x));
+    ctx2.fillStyle = 'rgba(40,55,45,'+Math.max(.06,.3-gapp*.004)+')';
+    ctx2.beginPath();
+    ctx2.ellipse(SX(x), SY(terrH(x))+3*zoom,
+      Math.max(CW*.16,(CW*.4-gapp*.16))*zoom, 7*zoom, 0, 0, 7);
+    ctx2.fill();
+
+    ctx2.save();
+    ctx2.translate(sxc, axC);
+    ctx2.rotate(-th);
+    ctx2.scale(zoom, zoom);
+    /* karosseri FØRST — hjulene skal ligge oppå, ellers gjemmer de baka
+       brønn-skyggene i spriten */
+    var bodyDrop = 0;
+    ctx2.drawImage(imgBody, -AXMX*SF, -AXY*SF + bodyDrop - RIDE, 640*SF, 241*SF);
+    /* fjærbein: en enkel mørk stag fra navet opp i brønnen, synlig når
+       hjulet henger i lufta */
+    var wr = imgWheel.width*SF/2;
+    ctx2.strokeStyle = '#23262a'; ctx2.lineWidth = 3.4;
+    [{ox:-WB/2, d:dR},{ox:WB/2, d:dF}].forEach(function(w){
+      ctx2.beginPath();
+      ctx2.moveTo(w.ox, -w.d);
+      ctx2.lineTo(w.ox, -RW*.55 + bodyDrop - RIDE);
+      ctx2.stroke();
+    });
+    /* hjul øverst: kompresjon (positiv d) løfter hjulet mot buen,
+       droop (negativ) senker det under bilen */
+    [{ox:-WB/2, d:dR},{ox:WB/2, d:dF}].forEach(function(w){
+      ctx2.save();
+      ctx2.translate(w.ox, -w.d);
+      ctx2.rotate(spin % (Math.PI*2));
+      ctx2.drawImage(imgWheel, -wr, -wr, wr*2, wr*2);
+      ctx2.restore();
+    });
+    ctx2.restore();
+  }
+
+  /* partikler */
+  parts.forEach(function(p){
+    var a = 1 - p.age/p.life;
+    var sx = SX(p.x), sy = SY(p.y);
+    if(p.t==='dust'){ ctx2.fillStyle='rgba(190,160,115,'+(a*.55)+')';
+      ctx2.beginPath(); ctx2.arc(sx, sy, p.r*(1+p.age*1.6)*zoom, 0, 7); ctx2.fill(); }
+    else if(p.t==='grus'){ ctx2.fillStyle='rgba(110,85,55,'+a+')';
+      ctx2.fillRect(sx, sy, p.r*zoom, p.r*zoom); }
+    else if(p.t==='spark'){ ctx2.fillStyle='rgba(255,'+(180+Math.floor(a*70))+',80,'+a+')';
+      ctx2.beginPath(); ctx2.arc(sx, sy, p.r*zoom, 0, 7); ctx2.fill(); }
+    else if(p.t==='ild'){ ctx2.fillStyle='rgba(255,'+(90+Math.floor(a*120))+',30,'+(a*.9)+')';
+      ctx2.beginPath(); ctx2.arc(sx, sy, p.r*(1+p.age)*zoom, 0, 7); ctx2.fill(); }
+    else if(p.t==='royk'){ ctx2.fillStyle='rgba(70,70,72,'+(a*.5)+')';
+      ctx2.beginPath(); ctx2.arc(sx, sy, p.r*(1+p.age*1.3)*zoom, 0, 7); ctx2.fill(); }
+    else if(p.t==='vann'){ ctx2.fillStyle='rgba(160,205,230,'+a+')';
+      ctx2.beginPath(); ctx2.arc(sx, sy, p.r*zoom, 0, 7); ctx2.fill(); }
+  });
+
+  /* flytende tekst */
+  pops.forEach(function(q){
+    var a = 1 - q.age/1.4;
+    ctx2.font = '700 '+Math.round(15*zoom+4)+'px Helvetica,Arial';
+    ctx2.textAlign = 'center';
+    ctx2.lineWidth = 3;
+    ctx2.strokeStyle = 'rgba(30,45,40,'+(a*.8)+')';
+    ctx2.strokeText(q.txt, SX(q.x), SY(q.y));
+    ctx2.fillStyle = q.c; ctx2.globalAlpha = a;
+    ctx2.fillText(q.txt, SX(q.x), SY(q.y));
+    ctx2.globalAlpha = 1;
+  });
+
+  tegnHUD();
+
+  if(flashT>0){
+    ctx2.fillStyle = 'rgba(255,240,220,'+(flashT*5)+')';
+    ctx2.fillRect(-8,-8,cssW+16,cssH+16);
+  }
+}
+
+/* ---------- HUD ---------- */
+function tegnHUD(){
+  /* tid øverst */
+  if(state==='kjor'||state==='maal'||state==='krasj'||state==='motor'){
+    var t = fmt(tid);
+    ctx2.font = '700 17px Consolas,monospace';
+    ctx2.textAlign = 'center';
+    var tw = ctx2.measureText(t).width;
+    ctx2.fillStyle = 'rgba(24,40,36,.55)';
+    rrekt(cssW/2 - tw/2 - 12, 10, tw+24, 26, 6);
+    ctx2.fillStyle = '#d8f6e8';
+    ctx2.fillText(t, cssW/2, 28);
+  }
+
+  /* nedtelling */
+  if(state==='nedtelling'){
+    var n = Math.ceil(countT);
+    ctx2.font = '700 64px Consolas,monospace';
+    ctx2.textAlign = 'center';
+    ctx2.fillStyle = 'rgba(24,40,36,.4)';
+    rrekt(cssW/2-52, cssH*.24, 104, 84, 10);
+    ctx2.fillStyle = n===0 ? '#8be28b' : '#ffd75e';
+    ctx2.fillText(n>0 ? String(n) : 'aja!', cssW/2, cssH*.24+62);
+  }
+
+  /* turteller-panel: buede søyler + valgt nivå, lik cmr2-referansen */
+  var pw = Math.min(320, cssW-190), ph = 80;
+  var px0 = cssW/2 - pw/2, py0 = cssH - ph - 10;
+  ctx2.fillStyle = 'rgba(22,38,34,.62)';
+  rrekt(px0, py0, pw, ph, 10);
+  if(warnT>0 && Math.floor(blinkT*7)%2===0){
+    ctx2.strokeStyle = 'rgba(255,80,50,.9)'; ctx2.lineWidth = 2.5;
+    rrektS(px0+1, py0+1, pw-2, ph-2, 9);
+  }
+  /* søylefeltet stopper før girboksen til høyre — de skal ikke overlappe */
+  var N = 28, bw = (pw-64)/N;
+  var frac = s/TL[7];
+  for(var i=0;i<N;i++){
+    var bx = px0+13 + i*bw;
+    var arc = Math.pow(i/N, 1.35)*26;
+    var bh = 7 + (i/N)*20;
+    var by = py0 + ph - 26 - arc;
+    var lit = (i+0.5)/N <= frac;
+    var red = i >= N-4;
+    if(lit){
+      ctx2.fillStyle = red ? '#ff5040' : '#7de8f2';
+      ctx2.shadowColor = red ? '#ff5040' : '#7de8f2';
+      ctx2.shadowBlur = 5;
+    } else {
+      ctx2.fillStyle = 'rgba(160,200,205,.16)';
+      ctx2.shadowBlur = 0;
+    }
+    ctx2.fillRect(bx, by-bh, Math.max(1.5,bw*.55), bh);
+    ctx2.shadowBlur = 0;
+  }
+  /* nivåtall 1..7 under søylene, valgt nivå uthevet */
+  ctx2.textAlign = 'center';
+  for(var k=1;k<=7;k++){
+    var bx = px0+13 + (k*4-2)*bw;
+    var valgt = k===L;
+    ctx2.font = (valgt?'700 13px':'400 10px')+' Consolas,monospace';
+    ctx2.fillStyle = valgt ? '#fff' : 'rgba(220,240,235,.45)';
+    ctx2.fillText(String(k), bx, py0+ph-7);
+    if(valgt){
+      ctx2.fillStyle = '#ffd75e';
+      ctx2.beginPath();
+      ctx2.moveTo(bx, py0+ph-22); ctx2.lineTo(bx-4, py0+ph-16); ctx2.lineTo(bx+4, py0+ph-16);
+      ctx2.fill();
+    }
+  }
+  /* digital fart + girboks */
+  ctx2.font = '700 13px Consolas,monospace';
+  ctx2.textAlign = 'left';
+  ctx2.fillStyle = '#cfeee2';
+  ctx2.fillText(('00'+Math.round(s*KMFAK)).slice(-3)+' km/t', px0+13, py0+16);
+  ctx2.fillStyle = 'rgba(255,255,255,.14)';
+  rrekt(px0+pw-34, py0+8, 26, 24, 5);
+  ctx2.font = '700 17px Consolas,monospace';
+  ctx2.textAlign = 'center';
+  ctx2.fillStyle = '#fff';
+  ctx2.fillText(String(L), px0+pw-21, py0+26);
+}
+function rrekt(x,y,w,h,r){
+  ctx2.beginPath();
+  ctx2.moveTo(x+r,y); ctx2.arcTo(x+w,y,x+w,y+h,r); ctx2.arcTo(x+w,y+h,x,y+h,r);
+  ctx2.arcTo(x,y+h,x,y,r); ctx2.arcTo(x,y,x+w,y,r); ctx2.fill();
+}
+function rrektS(x,y,w,h,r){
+  ctx2.beginPath();
+  ctx2.moveTo(x+r,y); ctx2.arcTo(x+w,y,x+w,y+h,r); ctx2.arcTo(x+w,y+h,x,y+h,r);
+  ctx2.arcTo(x,y+h,x,y,r); ctx2.arcTo(x,y,x+w,y,r); ctx2.closePath(); ctx2.stroke();
+}
+function fmt(t){
+  var m = Math.floor(t/60), sec = t-m*60;
+  var ss = (sec<10?'0':'')+sec.toFixed(2);
+  return m>0 ? m+':'+ss : ss;
+}
+
+/* ---------- overlegg (DOM) ---------- */
+var overEl, boksEl, oppKn;
+function overlayOn(){ return overEl.classList.contains('on'); }
+function vis(html){ boksEl.innerHTML = html; overEl.classList.add('on'); }
+function skjul(){
+  overEl.classList.remove('on');
+  if(oppKn) oppKn.style.display = 'none';
+}
+function visMeny(){
+  vis('<h2>salainen ek</h2><div class="fin">hemmelig fartsprøve · rally finland</div>'+
+    '<p><b>▲ ▼</b> velger fart 1–7 — det er alt du har.</p>'+
+    '<p>land i <b>nedoverbakke</b> = fartsboost · land i <b>motbakke</b> = brems · '+
+    'land på noe annet enn hjula = <b>smell</b>.</p>'+
+    '<p>og gir rolig ned — motoren er italiensk.</p>'+
+    (best!==null ? '<p>beste tid: <b>'+fmt(best)+'</b></p>' : '')+
+    '<div class="knapper"><button id="spillStart">kjør!</button></div>');
+  var b = document.getElementById('spillStart');
+  if(b) b.addEventListener('click', startLop);
+  if(oppKn) oppKn.style.display = 'inline-block';
+}
+/* egen overlegg-side for oppsettet — nås via knappen på venstre side */
+function visOppsett(){
+  vis('<h2>oppsett</h2><div class="fin">parc fermé · før start</div>'+
+    '<div class="oppsett">'+
+      [['ride','frihøyde','1 lav ↔ 7 høy'],
+       ['fjaer','fjærstivhet','1 myk ↔ 7 stiv'],
+       ['dkomp','demper kompresjon','1 rask ↔ 7 treg'],
+       ['dreb','demper retur','1 rask ↔ 7 treg']]
+      .map(function(r){
+        return '<div class="orad"><span>'+r[1]+'<i>'+r[2]+'</i></span>'+
+          '<button class="ojust" data-k="'+r[0]+'" data-d="-1" title="mindre">−</button>'+
+          '<b id="opp_'+r[0]+'">'+SETUP[r[0]]+'</b>'+
+          '<button class="ojust" data-k="'+r[0]+'" data-d="1" title="mer">+</button></div>';
+      }).join('')+
+    '</div>'+
+    '<div class="knapper"><button id="oppFerdig">ferdig</button></div>');
+  Array.prototype.forEach.call(boksEl.querySelectorAll('.ojust'), function(bt){
+    bt.addEventListener('click', function(){
+      var k = bt.getAttribute('data-k');
+      SETUP[k] = klamp17(SETUP[k] + (+bt.getAttribute('data-d')));
+      applySetup(); lagreSetup();
+      document.getElementById('opp_'+k).textContent = SETUP[k];
+      if(A.ctx) blip(760,.05,.09);
+    });
+  });
+  var f = document.getElementById('oppFerdig');
+  if(f) f.addEventListener('click', visMeny);
+}
+function visKrasj(){
+  var t = crashWhy==='nese'
+    ? 'nesa først i bakken — for lav fart til så langt hopp, eller for bratt landing.'
+    : 'hekken slo i først — for høy fart utfor hoppet.';
+  vis('<h2>ulykke!</h2><div class="fin">rulla rundt i skogen</div><p>'+t+'</p>'+
+    '<div class="knapper"><button id="spillIgjen">på nytt</button>'+
+    '<button class="ghost" id="spillUt">‹ meny</button></div>');
+  koble();
+}
+function visMotor(){
+  vis('<h2>moottori rikki!</h2><div class="fin">motoren røyk</div>'+
+    '<p>du pumpa girspaken som en gal. fire nedgiringer på under halvannet '+
+    'sekund er mer enn en italiensk motor fra 1992 tåler.</p>'+
+    '<div class="knapper"><button id="spillIgjen">på nytt</button>'+
+    '<button class="ghost" id="spillUt">‹ meny</button></div>');
+  koble();
+}
+function visMaal(ny){
+  vis('<h2>maali!</h2><div class="fin">du kom deg gjennom</div>'+
+    '<div class="lcdtid">'+fmt(tid)+'</div>'+
+    (ny ? '<p><b>ny rekord!</b></p>'
+        : (best!==null?'<p>beste: <b>'+fmt(best)+'</b></p>':''))+
+    '<div class="knapper"><button id="spillIgjen">på nytt</button>'+
+    '<button class="ghost" id="spillUt">‹ meny</button></div>');
+  koble();
+}
+function koble(){
+  var i = document.getElementById('spillIgjen'), u = document.getElementById('spillUt');
+  if(i) i.addEventListener('click', startLop);
+  if(u) u.addEventListener('click', function(){ skjul(); state='meny'; visMeny(); });
+}
+function startLop(){
+  audioInit();
+  if(A.ctx && A.ctx.state==='suspended') A.ctx.resume();
+  skjul(); reset();
+  state='nedtelling'; countT = 3;
+  [1,2,3].forEach(function(i){ setTimeout(function(){ blip(440,.12,.12); }, (i-1)*1000); });
+  setTimeout(function(){ blip(880,.3,.14); }, 3000);
+}
+
+/* ---------- oppsett / livssyklus ---------- */
+var inited = false;
+/* ---------- fullskjerm ---------- */
+function erFull(){
+  return !!(document.fullscreenElement || document.webkitFullscreenElement);
+}
+function laasLandskap(){
+  /* virker på android; ios og desktop avviser stille — helt greit */
+  try{
+    if(screen.orientation && screen.orientation.lock){
+      var p = screen.orientation.lock('landscape');
+      if(p && p.catch) p.catch(function(){});
+    }
+  }catch(e){}
+}
+function vekslFull(){
+  var w = cv.parentElement;
+  if(erFull()){
+    var ut = document.exitFullscreen || document.webkitExitFullscreen;
+    if(ut) ut.call(document);
+  } else {
+    var inn = w.requestFullscreen || w.webkitRequestFullscreen;
+    if(!inn) return;
+    var p = inn.call(w);
+    if(p && p.then) p.then(laasLandskap, function(){}); else laasLandskap();
+  }
+}
+var fullPrøvd = false;
+function autoFull(){
+  if(fullPrøvd || erFull()) return;
+  if(!window.matchMedia || !window.matchMedia('(pointer:coarse)').matches) return;
+  if(!document.getElementById('spill').classList.contains('on')) return;
+  fullPrøvd = true;
+  try{ vekslFull(); }catch(e){}
+}
+function oppdaterFullKnapp(){
+  var b = document.getElementById('spillFull');
+  if(b) b.textContent = erFull() ? 'lukk fullskjerm' : 'fullskjerm';
+}
+
+function fit(){
+  var wrap = cv.parentElement;
+  dpr = window.devicePixelRatio||1;
+  cssW = wrap.clientWidth - 24;
+  /* i fullskjerm skal banen få nesten hele høyden — ellers lar vi plass
+     stå igjen til resten av sida under */
+  cssH = Math.round(Math.min(Math.max(cssW*.62, 250),
+    window.innerHeight*(erFull() ? .84 : .66)));
+  zoom = Math.max(.42, Math.min(1.2, cssW/760));
+  cv.style.height = cssH+'px';
+  cv.width = Math.round(cssW*dpr); cv.height = Math.round(cssH*dpr);
+}
+function init(){
+  if(inited) return;
+  inited = true;
+  cv = document.getElementById('spillCanvas');
+  ctx2 = cv.getContext('2d');
+  overEl = document.getElementById('spillOver');
+  boksEl = document.getElementById('spillBoks');
+  oppKn = document.getElementById('spillOppsettKnapp');
+  oppKn.addEventListener('click', function(){
+    if(state === 'meny') visOppsett();
+  });
+  document.getElementById('spillOpp').addEventListener('pointerdown', function(e){
+    e.preventDefault(); girOpp();
+  });
+  document.getElementById('spillNed').addEventListener('pointerdown', function(e){
+    e.preventDefault(); girNed();
+  });
+  /* fullskjermknappen vises bare hvis nettleseren faktisk støtter det
+     (ios safari gjør ikke det for vanlige elementer) */
+  var fullBtn = document.getElementById('spillFull');
+  if(cv.parentElement.requestFullscreen || cv.parentElement.webkitRequestFullscreen){
+    fullBtn.hidden = false;
+    fullBtn.addEventListener('click', vekslFull);
+    ['fullscreenchange','webkitfullscreenchange'].forEach(function(ev){
+      document.addEventListener(ev, function(){
+        oppdaterFullKnapp();
+        if(state!=='av') fit();
+      });
+    });
+  }
+  /* På mobil slås fullskjerm på av seg selv — samme knapp som i toppen,
+     bare utløst automatisk. Prøves når spillet åpnes og på nytt hver gang
+     telefonen snus til landskap. Nettleseren kan avvise det (fullskjerm
+     krever som regel et trykk), og da står knappen igjen som den manuelle
+     veien inn. Avslutter man fullskjerm selv, maser vi ikke. */
+  if(window.matchMedia){
+    var mqLand = window.matchMedia('(orientation:landscape)');
+    var påLand = function(e){
+      if(!e.matches) return;
+      fullPrøvd = false;
+      autoFull();
+    };
+    if(mqLand.addEventListener) mqLand.addEventListener('change', påLand);
+    else if(mqLand.addListener) mqLand.addListener(påLand);
+  }
+  var lydBtn = document.getElementById('spillLyd');
+  lydBtn.addEventListener('click', function(){
+    A.on = !A.on;
+    if(A.master) A.master.gain.value = A.on?1:0;
+    lydBtn.textContent = 'lyd: '+(A.on?'på':'av');
+  });
+  document.addEventListener('keydown', function(e){
+    if(!document.getElementById('spill').classList.contains('on')) return;
+    if(e.key==='ArrowUp'||e.key==='w'){ e.preventDefault(); if(!e.repeat) girOpp(); }
+    else if(e.key==='ArrowDown'||e.key==='s'){ e.preventDefault(); if(!e.repeat) girNed(); }
+    else if(e.key==='Enter'||e.key===' '){
+      if(overlayOn()){
+        var b = document.getElementById('spillStart')||document.getElementById('spillIgjen');
+        if(b){ e.preventDefault(); b.click(); }
+      }
+    }
+  }, true);
+  window.addEventListener('resize', function(){
+    if(state!=='av') fit();
+  });
+}
+
+function loop(t){
+  raf = requestAnimationFrame(loop);
+  if(!lastT) lastT = t;
+  var dt = Math.min(.1, (t-lastT)/1000);
+  lastT = t;
+  accum += dt;
+  var n = 0;
+  while(accum >= 1/120 && n < 8){ step(1/120); accum -= 1/120; n++; }
+  tegn();
+}
+
+function enter(){
+  init(); fit();
+  autoFull();
+  if(state==='av'){
+    reset(); state='meny'; visMeny();
+    lastT = 0; accum = 0;
+    raf = requestAnimationFrame(loop);
+  }
+}
+function leave(){
+  if(state==='av') return;
+  /* forlater man spillet mens fullskjerm står på, skal skjermen slippes */
+  if(erFull()){
+    var ut = document.exitFullscreen || document.webkitExitFullscreen;
+    if(ut) try{ ut.call(document); }catch(e){}
+  }
+  cancelAnimationFrame(raf);
+  state='av'; skjul();
+  if(A.ctx){ engSet(40,0); A.ctx.suspend(); }
+}
+
+return {
+  enter: enter, leave: leave,
+  /* deterministisk styring for testing */
+  _d: {
+    start: function(){ init(); fit(); reset(); skjul(); state='kjor'; tid=0; },
+    step: function(n, dt){ for(var i=0;i<n;i++) step(dt||1/120); },
+    setL: function(v){ L=v; },
+    ned: girNed, opp: girOpp,
+    get: function(){ return {state:state, x:x, h:h, s:s, th:th, tid:tid, L:L,
+      grounded:grounded, best:best, boostT:boostT, crashWhy:crashWhy,
+      nBoost:nBoost, airMax:Math.round(airMax),
+      dF:+dF.toFixed(2), dR:+dR.toFixed(2),
+      hOff:+hOff.toFixed(2), hOffV:Math.round(hOffV)}; },
+    terrH: terrH, terrSl: terrSl, reset: reset, draw: tegn,
+    setup: function(o){ for(var k in o) SETUP[k] = klamp17(o[k]); applySetup(); }
+  }
+};
+})();
+</script>
 </body>
 </html>
